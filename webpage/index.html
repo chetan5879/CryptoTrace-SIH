@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRYPTOTRACE | Autonomous Blockchain Intelligence</title>
+
+    <!-- Interactive Graph Library -->
+    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+
+    <link rel="stylesheet" href="style.css">
+
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+
+<body>
+
+<div class="app">
+
+    <!-- ================= SIDEBAR ================= -->
+    <aside class="sidebar" id="sidebar">
+
+        <div class="logo">
+            <div class="logo-box">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <div>
+                <h2>CRYPTOTRACE</h2>
+                <small>Autonomous Forensics</small>
+            </div>
+        </div>
+
+        <div class="menu-section">
+            <p class="menu-title">OPERATIONS</p>
+
+            <button class="menu-item active" onclick="showPage('dashboard', this)">
+                <i class="fa-solid fa-house"></i>
+                <span>Dashboard</span>
+            </button>
+
+            <button class="menu-item" onclick="showPage('investigations', this)">
+                <i class="fa-solid fa-crosshairs"></i>
+                <span>Trace Engine</span>
+            </button>
+
+            <button class="menu-item" onclick="showPage('wallets', this)">
+                <i class="fa-solid fa-wallet"></i>
+                <span>Wallet Intelligence</span>
+            </button>
+
+            <button class="menu-item" onclick="showPage('transactions', this)">
+                <i class="fa-solid fa-link"></i>
+                <span>Transaction Explorer</span>
+            </button>
+
+            <button class="menu-item" onclick="showPage('alerts', this)">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span>Alerts</span>
+                <b class="notification" id="sidebarAlertCount">0</b>
+            </button>
+
+            <button class="menu-item" onclick="showPage('analytics', this)">
+                <i class="fa-solid fa-chart-pie"></i>
+                <span>Typology Analytics</span>
+            </button>
+
+            <button class="menu-item" onclick="showPage('reports', this)">
+                <i class="fa-solid fa-file-contract"></i>
+                <span>NCRP Dossiers</span>
+            </button>
+
+            <p class="menu-title system">SYSTEM</p>
+
+            <button class="menu-item" onclick="showPage('settings', this)">
+                <i class="fa-solid fa-sliders"></i>
+                <span>Diagnostics & Setup</span>
+            </button>
+        </div>
+
+        <div class="sidebar-bottom">
+            <div class="system-status">
+                <span class="status-dot"></span>
+                <div>
+                    <strong>Engine Active</strong>
+                    <small>RPC & ML Pipelines Online</small>
+                </div>
+            </div>
+
+            <div class="user">
+                <div class="avatar">LEA</div>
+                <div>
+                    <strong>Investigator</strong>
+                    <small>Cyber Crime Unit</small>
+                </div>
+            </div>
+        </div>
+
+    </aside>
+
+    <!-- ================= MAIN CONTENT ================= -->
+    <main class="main">
+
+        <!-- ================= TOP BAR ================= -->
+        <header class="topbar">
+            <button class="mobile-menu" onclick="toggleSidebar()">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+
+            <!-- Functional Search Bar -->
+            <div class="search">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input
+                    id="globalSearchInput"
+                    type="text"
+                    placeholder="Quick Trace: Enter Wallet Address or Case ID and press Enter..."
+                    onkeydown="handleGlobalSearch(event)"
+                >
+            </div>
+
+            <div class="top-actions">
+                <button class="icon-button" onclick="showPage('alerts', document.querySelectorAll('.menu-item')[4])" title="View High Risk Alerts">
+                    <i class="fa-regular fa-bell"></i>
+                    <b id="topbarAlertCount">0</b>
+                </button>
+
+                <div class="top-user">
+                    <div class="avatar">LEA</div>
+                    <div>
+                        <strong>Investigator</strong>
+                        <small>Official Access</small>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- ================= DASHBOARD ================= -->
+        <section class="page active-page" id="dashboard">
+            <div class="page-heading">
+                <div>
+                    <span class="eyebrow">COMMAND CENTER</span>
+                    <h1>Investigation Dashboard</h1>
+                    <p>High-level threat matrix and active cybercrime case attribution.</p>
+                </div>
+
+                <button class="primary-button" onclick="openInvestigation()">
+                    <i class="fa-solid fa-plus"></i>
+                    New Investigation
+                </button>
+            </div>
+
+            <!-- STAT CARDS -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon blue"><i class="fa-solid fa-folder-open"></i></div>
+                    <div>
+                        <span>Registered Cases</span>
+                        <h2 id="dashTotalCases">0</h2> 
+                        <small class="positive">PostgreSQL Stored</small>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon purple"><i class="fa-solid fa-network-wired"></i></div>
+                    <div>
+                        <span>Wallets Traced</span>
+                        <h2 id="dashWalletsTraced">0</h2> 
+                        <small class="positive">Multi-hop Topology</small>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon green"><i class="fa-solid fa-shield-halved"></i></div>
+                    <div>
+                        <span>Off-Ramp Tracking</span>
+                        <h2>Real-Time</h2> 
+                        <small class="positive">VASP Matching Active</small>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon red"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                    <div>
+                        <span>Critical Threat Nodes</span>
+                        <h2 id="dashHighRisk">0</h2> 
+                        <small class="negative">Score ≥ 80/100</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DASHBOARD CHARTS & RISK METRICS -->
+            <div class="dashboard-grid">
+                <div class="card large-card">
+                    <div class="card-header">
+                        <div>
+                            <h3>Investigation Volume & Fund Trails</h3>
+                            <p>Continuous monitoring of registered cryptocurrency flows</p>
+                        </div>
+                    </div>
+                    <div class="fake-chart">
+                        <div class="chart-line"></div>
+                        <div class="chart-labels">
+                            <span>EVM</span>
+                            <span>TRON USDT</span>
+                            <span>BTC UTXO</span>
+                            <span>LAYERING</span>
+                            <span>OFF-RAMPS</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <h3>Risk Severity Distribution</h3>
+                            <p>ML-evaluated wallet scores</p>
+                        </div>
+                    </div>
+
+                    <div class="risk-circle">
+                        <div>
+                            <strong id="dashTotalCasesCircle">Live</strong>
+                            <span>Cases</span>
+                        </div>
+                    </div>
+
+                    <div class="risk-list">
+                        <div><span class="dot low"></span> Low (0-19) <b id="pctLow">0%</b></div>
+                        <div><span class="dot medium"></span> Medium (20-49) <b id="pctMedium">0%</b></div>
+                        <div><span class="dot high"></span> High (50-79) <b id="pctHigh">0%</b></div>
+                        <div><span class="dot critical"></span> Critical (80-100) <b id="pctCritical">0%</b></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RECENT CASES -->
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <h3>Recent Case Ledger</h3>
+                        <p>Most recent autonomous traces recorded in system database</p>
+                    </div>
+                    <button class="text-button" onclick="showPage('reports', document.querySelectorAll('.menu-item')[6])">
+                        View Dossiers <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>CASE REFERENCE</th>
+                                <th>TARGET WALLET</th>
+                                <th>NETWORK</th>
+                                <th>FRAUD CLASSIFICATION</th>
+                                <th>THREAT SEVERITY</th>
+                                <th>STATUS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Database records loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= INVESTIGATIONS (TRACE ENGINE) ================= -->
+        <<!-- ================= INVESTIGATIONS (TRACE ENGINE) ================= -->
+        <section class="page" id="investigations">
+            <div class="page-heading">
+                <div>
+                    <span class="eyebrow">FORENSIC ENGINE</span>
+                    <h1>Multi-Hop Blockchain Trace</h1>
+                    <p>Trace capital flight across intermediary accounts and identify VASP liquidation points.</p>
+                </div>
+
+                <button class="primary-button" onclick="resetInvestigationForm()">
+                    <i class="fa-solid fa-rotate-left"></i>
+                    Reset Form
+                </button>
+            </div>
+
+            <div class="card investigation-form" style="padding: 24px;">
+                
+                <div class="form-grid">
+                    <div class="input-group">
+                        <label>NCRP Case Reference ID</label>
+                        <input id="caseId" placeholder="e.g., NCRP-2026-9481">
+                        <small class="helper-text">Official police case reference or complaint number for legal attribution.</small>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Reported Cybercrime Typology</label>
+                        <select id="fraudType">
+                            <option>Investment Scam</option>
+                            <option>Task-Based Fraud</option>
+                            <option>Phishing & Approval Drainer</option>
+                            <option>Ransomware Extortion</option>
+                            <option>Unauthorized Exchange Transfer</option>
+                            <option>Darknet Laundering</option>
+                        </select>
+                        <small class="helper-text">Defines investigative context and customizes the final legal report.</small>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px;">
+                        <label style="margin-bottom: 0;">Suspect / Reported Wallet Address</label>
+                        <!-- Dynamic Validation Badge -->
+                        <span id="walletValidationBadge" style="font-size: 8px; font-weight: 700; padding: 2px 7px; border-radius: 4px; display: none;"></span>
+                    </div>
+
+                    <div class="wallet-input" id="walletInputWrapper">
+                        <i class="fa-solid fa-wallet"></i>
+                        <input 
+                            id="walletInput" 
+                            placeholder="Paste 0x (EVM), T... (Tron), or 1/3/bc1 (Bitcoin) address..." 
+                            oninput="handleWalletAddressInput()"
+                        >
+                    </div>
+                    <small class="helper-text" id="walletHelperText">The initial flagged wallet identified in the victim's statement.</small>
+                    
+                    <!-- Mismatch Error Banner -->
+                    <div id="walletMismatchError" style="display: none; color: #d9364f; font-size: 8.5px; font-weight: 600; margin-top: 6px; padding: 5px 8px; background: #ffe0e5; border-radius: 4px; border: 1px solid #fca5a5;">
+                        <i class="fa-solid fa-circle-exclamation"></i> <span id="mismatchMessageText">Address and cryptocurrency used do not match!</span>
+                    </div>
+                </div>
+
+                <div class="form-grid">
+                    <div class="input-group">
+                        <label>Blockchain Network</label>
+                        <select id="blockchain" onchange="validateAddressAndChain()">
+                            <option value="Ethereum">Ethereum (ETH / ERC-20)</option>
+                            <option value="Tron">Tron (TRC-20 USDT & TRX)</option>
+                            <option value="Bitcoin">Bitcoin (BTC UTXO)</option>
+                            <option value="BNB Chain">BNB Chain (BSC / BEP-20)</option>
+                            <option value="Polygon">Polygon (MATIC / ERC-20)</option>
+                        </select>
+                        <small class="helper-text">Routes API calls to Alchemy (EVM), TronScan (Tron), or Mempool (BTC).</small>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Trace Depth (Max Recursive Hops)</label>
+                        <select id="hopDepth">
+                            <option value="1">1 Hop (Direct Counterparties Only)</option>
+                            <option value="2" selected>2 Hops (Standard Layering Trace)</option>
+                            <option value="3">3 Hops (Deep Off-Ramp Search)</option>
+                        </select>
+                        <small class="helper-text">Higher hops follow funds further downstream to find cash-out exchanges.</small>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Peeling / Layering Sensitivity Threshold</label>
+                    <div class="wallet-input">
+                        <i class="fa-solid fa-code-branch"></i>
+                        <input type="number" id="fanThreshold" value="5" min="2" max="50">
+                    </div>
+                    <small class="helper-text">Minimum counterparties required to trigger automated Fan-Out or Fan-In red flags.</small>
+                </div>
+
+                <button class="trace-button" onclick="startTrace()">
+                    <i class="fa-solid fa-bolt"></i>
+                    Execute Autonomous Trace
+                </button>
+            </div>
+        </section>
+        <!-- ================= WALLET INTELLIGENCE ================= -->
+        <section class="page" id="wallets">
+            <div class="page-heading">
+                <div>
+                    <span class="eyebrow">COUNTERPARTY INTELLIGENCE</span>
+                    <h1>Wallet Intelligence Scanner</h1>
+                    <p>Perform a quick single-address audit to screen for known entities, mixers, and immediate counterparties.</p>
+                </div>
+            </div>
+
+            <div class="wallet-search card">
+                <i class="fa-solid fa-wallet"></i>
+                <input id="intelSearchInput" placeholder="Enter any wallet address to scan counterparties and risk...">
+                <button class="primary-button" onclick="analyzeStandaloneWallet()">
+                    <i class="fa-solid fa-magnifying-glass"></i> Inspect Wallet
+                </button>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon blue"><i class="fa-solid fa-building-columns"></i></div>
+                    <div>
+                        <span>Exchange Attribution</span>
+                        <h2 id="intelVaspLead" style="font-size: 1.1rem; margin-top: 5px;">None</h2>
+                        <small class="positive">VASP Ledger Status</small>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon purple"><i class="fa-solid fa-robot"></i></div>
+                    <div>
+                        <span>AML Risk Flags</span>
+                        <h2 id="intelAnomalies">0</h2>
+                        <small class="negative">Heuristics Triggered</small>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon green"><i class="fa-solid fa-arrows-split-up-and-left"></i></div>
+                    <div>
+                        <span>Direct Counterparties</span>
+                        <h2 id="intelTxCount">0</h2>
+                        <small class="positive">1st-Hop Connections</small>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon red"><i class="fa-solid fa-shield-virus"></i></div>
+                    <div>
+                        <span>Assigned Threat Score</span>
+                        <h2 class="danger-text" id="intelRiskScore">--/100</h2>
+                        <small class="negative">Calculated Severity</small>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= TRANSACTION EXPLORER ================= -->
+        <section class="page" id="transactions">
+            <div class="page-heading">
+                <div>
+                    <span class="eyebrow">TRANSACTION LEDGER</span>
+                    <h1>Forensic Transaction Explorer</h1>
+                    <p>Granular transaction ledger highlighting capital movements, rapid turnarounds, and peeling events.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="filters">
+                    <input id="txSearchFilter" placeholder="Filter by address or transaction hash..." onkeyup="filterTransactionsTable()">
+                    <select id="txRiskFilterSelect" onchange="filterTransactionsTable()">
+                        <option value="all">All Movements</option>
+                        <option value="rapid">Rapid Turnarounds (<24h) Only</option>
+                        <option value="standard">Standard Transfers Only</option>
+                    </select>
+                </div>
+
+                <div class="table-container">
+                    <table id="txTable">
+                        <thead>
+                            <tr>
+                                <th>TRANSACTION HASH</th>
+                                <th>SENDER (FROM)</th>
+                                <th>RECIPIENT (TO)</th>
+                                <th>AMOUNT / ASSET</th>
+                                <th>BLOCK TIMESTAMP</th>
+                                <th>FORENSIC FLAG</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Transactions populated dynamically from active trace -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= ALERTS ================= -->
+        <section class="page" id="alerts">
+            <div class="page-heading">
+                <div>
+                    <span class="eyebrow">THREAT MONITOR</span>
+                    <h1>Autonomous AML Alerts</h1>
+                    <p>Wallets requiring immediate legal review due to pass-through laundering, mixing, or high layering scores.</p>
+                </div>
+            </div>
+
+            <div class="alerts-grid" id="alertsContainer">
+                <!-- High-risk alerts injected here -->
+            </div>
+        </section>
+
+        <!-- ================= ANALYTICS ================= -->
+        <section class="page" id="analytics">
+            <div class="page-heading">
+                <div>
+                    <span class="eyebrow">THREAT INTELLIGENCE</span>
+                    <h1>Typology & Network Analytics</h1>
+                    <p>Comprehensive overview of crime distributions and multi-hop network complexity.</p>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon blue"><i class="fa-solid fa-folder-tree"></i></div>
+                    <div>
+                        <span>Cases Profiled</span>
+                        <h2 id="analyticsTotalCases">0</h2>
+                        <small class="positive">Case Management</small>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon red"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                    <div>
+                        <span>Critical Threat Nodes</span>
+                        <h2 id="analyticsCriticalCases">0</h2>
+                        <small class="negative">Requires Police Action</small>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon green"><i class="fa-solid fa-route"></i></div>
+                    <div>
+                        <span>Estimated Hops Traced</span>
+                        <h2 id="analyticsHopsTracked">0</h2>
+                        <small class="positive">Total Layers Explored</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card analytics-chart">
+                <div class="card-header">
+                    <div>
+                        <h3>Reported Fraud Typology Breakdown</h3>
+                        <p>Distribution of registered crime categories across active investigations</p>
+                    </div>
+                </div>
+                <div class="horizontal-bars" id="typologyContainer">
+                    <!-- Clean, formatted progress bars injected here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= REPORTS ================= -->
+        <section class="page" id="reports">
+            <div class="page-heading">
+                <div>
+                    <span class="eyebrow">LEGAL COMPLIANCE</span>
+                    <h1>NCRP Forensic Dossiers</h1>
+                    <p>Generate court-admissible, digitally verified PDF reports for law enforcement freeze notices.</p>
+                </div>
+
+                <button class="primary-button" onclick="openLatestReport()">
+                    <i class="fa-solid fa-file-pdf"></i>
+                    Export Active Dossier
+                </button>
+            </div>
+
+            <div class="card">
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>CASE ID</th>
+                                <th>TARGET WALLET</th>
+                                <th>BLOCKCHAIN</th>
+                                <th>THREAT SCORE</th>
+                                <th>DOSSIER GENERATION</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportsTableBody">
+                            <!-- Database report entries loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= SETTINGS ================= -->
+        <section class="page" id="settings">
+            <div class="page-heading">
+                <div>
+                    <span class="eyebrow">SYSTEM MANAGEMENT</span>
+                    <h1>Investigator Profile & Diagnostics</h1>
+                    <p>Configure official credentials stamped onto legal PDF dossiers and verify RPC infrastructure.</p>
+                </div>
+            </div>
+
+            <div class="settings-grid">
+                <div class="card" style="padding: 20px;">
+                    <h3>Investigator Dossier Signature</h3>
+                    <div class="setting-row">
+                        <span>Investigating Officer</span>
+                        <input id="settingName" style="border:1px solid #cce5f4; border-radius:4px; padding:4px 8px;" value="Investigator">
+                    </div>
+                    <div class="setting-row">
+                        <span>Officer Badge / ID</span>
+                        <input id="settingBadge" style="border:1px solid #cce5f4; border-radius:4px; padding:4px 8px;" value="LEA-7704">
+                    </div>
+                    <div class="setting-row">
+                        <span>Law Enforcement Agency</span>
+                        <input id="settingUnit" style="border:1px solid #cce5f4; border-radius:4px; padding:4px 8px;" value="Cyber Crime Unit">
+                    </div>
+                    <button class="primary-button" style="margin-top:16px;" onclick="saveInvestigatorSettings()">
+                        <i class="fa-solid fa-floppy-disk"></i> Update Stamped Profile
+                    </button>
+                </div>
+
+                <div class="card" style="padding: 20px;">
+                    <h3>Subsystem Diagnostics</h3>
+                    <div class="setting-row">
+                        <span>FastAPI Engine (Port 8000)</span>
+                        <span class="connected" id="diagBackend">Online</span>
+                    </div>
+                    <div class="setting-row">
+                        <span>PostgreSQL Entity Database</span>
+                        <span class="connected" id="diagDb">Connected</span>
+                    </div>
+                    <div class="setting-row">
+                        <span>Alchemy & Explorer Adapters</span>
+                        <span class="connected" id="diagAlchemy">Active</span>
+                    </div>
+                    <button class="primary-button" style="margin-top:16px;" onclick="checkSystemDiagnostics()">
+                        <i class="fa-solid fa-arrows-rotate"></i> Ping All Subsystems
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= TRACE RESULT MODAL ================= -->
+        <div class="modal" id="traceModal">
+            <div class="modal-content">
+                <button class="modal-close" onclick="closeModal()">×</button>
+
+                <div class="loading-icon">
+                    <i class="fa-solid fa-diagram-project"></i>
+                </div>
+
+                <h2>Autonomous Blockchain Trace Complete</h2>
+                <p>Interactive fund-flow topology mapped. Color-coded by machine learning risk severity.</p>
+
+                <div class="trace-result">
+                    <!-- Populated dynamically -->
+                </div>
+
+                <!-- Vis.js Graph Canvas -->
+                <div id="networkGraph" style="width: 100%; height: 280px; background: #eef7fc; border-radius: 8px; border: 1px solid #a9d8ed; margin-bottom: 20px;"></div>
+
+                <div class="flow-preview">
+                    <div class="flow-node">
+                        <i class="fa-solid fa-wallet"></i>
+                        <span>Suspect (Origin)</span>
+                    </div>
+                    <i class="fa-solid fa-arrow-right"></i>
+                    <div class="flow-node">
+                        <i class="fa-solid fa-share-nodes"></i>
+                        <span>Intermediary Nodes</span>
+                    </div>
+                    <i class="fa-solid fa-arrow-right"></i>
+                    <div class="flow-node">
+                        <i class="fa-solid fa-building-columns"></i>
+                        <span>Identified VASP / Mixer</span>
+                    </div>
+                </div>
+
+                <button class="primary-button full" onclick="generateReport()">
+                    <i class="fa-solid fa-file-pdf"></i>
+                    Download Official NCRP Forensic Dossier
+                </button>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<!-- PDF Libraries -->
+<script src="https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://unpkg.com/jspdf-autotable@3.5.31/dist/jspdf.plugin.autotable.min.js"></script>
+
+<script src="script.js"></script>
+</body>
+</html>
