@@ -3,6 +3,7 @@ import time
 import uuid
 import json
 import base64
+import asyncio
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
 
@@ -69,7 +70,7 @@ def init_db():
         )
     """)
     
-    # 2. Dynamic Entities Table (The Permanent Solution)
+    # 2. Dynamic Entities Table
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS known_entities (
             wallet_address TEXT PRIMARY KEY,
@@ -79,17 +80,52 @@ def init_db():
         )
     """)
     
-    # 3. Auto-seed the database if it is empty
-    cursor.execute("SELECT COUNT(*) FROM known_entities")
-    if cursor.fetchone()[0] == 0:
-        seed_data = [
-            ("0x27f706edde3ad952ef647dd67e24e38cd0803dd6", "WazirX Hot Wallet", True, False),
-            ("0x3235b2b2915cd67df9adbfcfdc093c063cfbc4fc", "CoinDCX Hot Wallet", True, False),
-            ("tmua6yqfcex8ehbfyeg5y7s4dqzsjirey9", "Binance Tron Hot Wallet", True, False),
-            ("t9yd14nj9j7xab4dbgeix9h8unkkhxuwwb", "Tron Network Black Hole (Burn)", True, False),
-            ("0x12d66f87a04a9e220743712ce6d9bb1b5616b8fc", "Tornado Cash (Mixer)", False, True)
-        ]
-        cursor.executemany("INSERT INTO known_entities (wallet_address, name, is_vasp, is_mixer) VALUES (%s, %s, %s, %s)", seed_data)
+    # 3. Comprehensive Global Seed Data (Restored)
+    seed_data = [
+        # Indian Exchanges
+        ("0x27f706edde3ad952ef647dd67e24e38cd0803dd6", "WazirX Hot Wallet", True, False),
+        ("0x301cc9fcfc0a76ec6a2dfb42ec34b6b6ec4210d4", "WazirX Operations", True, False),
+        ("0x3235b2b2915cd67df9adbfcfdc093c063cfbc4fc", "CoinDCX Hot Wallet", True, False),
+        ("0xeb252d6a5c102a0614532a2491a13ce32e18b871", "CoinSwitch Kuber", True, False),
+        
+        # Global EVM Exchanges
+        ("0x3f5ce5fbfe3e9af3971dd833d26ba9b5c936f0be", "Binance Hot Wallet", True, False),
+        ("0x28c6c06298d514db089934071355e5743bf21d60", "Binance 14", True, False),
+        ("0x503828976d22510aad0201ac7ec88293211d23da", "Coinbase 1", True, False),
+        ("0xddfabcdc4d8ffc6d5beaf154f18b778f892a0740", "Coinbase 2", True, False),
+        ("0x267be1c1d68e0e58603612dfbd6b445c71d37803", "Kraken 1", True, False),
+        ("0x6cc5f688a315f3dc28a7781717a9a798a59fda7b", "OKX Hot Wallet", True, False),
+        ("0x2b5634c42055806a59e9107ed44d43c426e58258", "KuCoin Hub", True, False),
+        ("0xf977814e90da44bfa03b6295a0616a897441acec", "Huobi Exchange", True, False),
+        ("0x1dba1131000664b884a1ba238464159892252d3a", "Bybit Hot Wallet", True, False),
+        ("0xcc470bdc7d2fb70094bba8912d8a4369ec23a854", "Upbit Exchange", True, False),
+        
+        # TRON VASPs
+        ("tmua6yqfcex8ehbfyeg5y7s4dqzsjirey9", "Binance Tron Hot Wallet", True, False),
+        ("taun6fwrnwwmaeqycckffc7wymbas6cbix", "Binance Tron 2", True, False),
+        ("thpvauhoh2qn2y9thczml3h815gznamv8s", "Huobi Tron Hot Wallet", True, False),
+        ("tqnh3ptpvmb6o7a2xmxun4vymxeqf215gq", "OKX Tron Hot Wallet", True, False),
+        ("t9yd14nj9j7xab4dbgeix9h8unkkhxuwwb", "Tron Network Black Hole (Burn)", True, False),
+        
+        # BTC VASPs
+        ("34xp4vrocgjym3xr7ycvpfhocnxv4twseo", "Binance Cold Storage (BTC)", True, False),
+        ("bc1qm34lsc65zpx6u344xxy59yq2659p4m773t97p7", "Coinbase Prime (BTC)", True, False),
+        
+        # Mixers
+        ("0x12d66f87a04a9e220743712ce6d9bb1b5616b8fc", "Tornado Cash (Mixer)", False, True),
+        ("0x47ce0c6ed5b0ce3d3a51fdb1c52dc66a7c3c2936", "Tornado Cash 100 ETH", False, True),
+        ("0xd90e2f925da726b50c4ed8d0fb90ad053324f31b", "Tornado Cash 1 ETH", False, True)
+    ]
+    
+    # Force updates the database without resetting your cases
+    cursor.executemany("""
+        INSERT INTO known_entities (wallet_address, name, is_vasp, is_mixer)
+        VALUES (%s, %s, %s, %s)
+        ON CONFLICT (wallet_address) DO UPDATE SET
+            name = EXCLUDED.name,
+            is_vasp = EXCLUDED.is_vasp,
+            is_mixer = EXCLUDED.is_mixer
+    """, seed_data)
         
     conn.commit()
     cursor.close()
@@ -105,9 +141,56 @@ def get_entity_data(address: str):
     conn.close()
     return dict(row) if row else {}
 
+
+async def sync_osint_feeds():
+    """Background CRON job that fetches live OFAC sanctions and updates PostgreSQL every 24 hours."""
+    while True:
+        print("\n[OSINT] Initiating daily threat intelligence sync...")
+        try:
+            # Fetching live OFAC sanctioned Ethereum addresses from an open-source tracker
+            url = "https://raw.githubusercontent.com/0xB10C/ofac-sanctioned-digital-currency-addresses/main/sanctioned_addresses_ETH.json"
+            res = requests.get(url, timeout=10)
+            
+            if res.status_code == 200:
+                ofac_addresses = res.json()
+                
+                # Format into PostgreSQL tuples: (address, name, is_vasp, is_mixer)
+                # Setting is_mixer=True ensures the AI assigns a 99/100 Critical Risk score
+                threat_data = [
+                    (addr.lower(), "OFAC Sanctioned Entity", False, True) 
+                    for addr in ofac_addresses
+                ]
+                
+                conn = get_db_connection()
+                cursor = conn.cursor()
+                
+                # Batch insert/update the new addresses directly into the live database
+                cursor.executemany("""
+                    INSERT INTO known_entities (wallet_address, name, is_vasp, is_mixer)
+                    VALUES (%s, %s, %s, %s)
+                    ON CONFLICT (wallet_address) DO UPDATE SET
+                        name = EXCLUDED.name,
+                        is_mixer = EXCLUDED.is_mixer
+                """, threat_data)
+                
+                conn.commit()
+                cursor.close()
+                conn.close()
+                
+                print(f"[OSINT] Successfully ingested {len(threat_data)} live OFAC sanctioned addresses into PostgreSQL.\n")
+            
+        except Exception as e:
+            print(f"[OSINT] Database update failed: {e}\n")
+            
+        # Sleep for 24 hours (86400 seconds) before querying the API again
+        await asyncio.sleep(86400)
+
+
 @app.on_event("startup")
-def on_startup():
+async def on_startup():
     init_db()
+    # Fire and forget the background OSINT ingestion script alongside the main server
+    asyncio.create_task(sync_osint_feeds())
 
 class CaseModel(BaseModel):
     case_id: str
@@ -340,45 +423,76 @@ def fetch_bitcoin_transfers(wallet, direction):
     return transfers
 
 def fetch_tron_transfers(wallet, direction):
-    """Fetches TRC-20 and Approvals while bypassing Cloudflare bot-protection"""
+    """Fetches BOTH Native TRX and TRC-20 tokens using TronScan API with Cloudflare bypass"""
     transfers = []
-    wallet = wallet.strip() 
+    wallet = wallet.strip()
     
-    # CRITICAL FIX: Spoof a real web browser so Cloudflare doesn't block the Python request
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Accept": "application/json"
     }
     
     try:
-        # 1. Primary: TronGrid API (Most reliable for all standard TRC-20 transfers)
-        trc20_url = f"https://api.trongrid.io/v1/accounts/{wallet}/transactions/trc20?limit=50"
+        # 1. Fetch TRC-20 Token Transfers (USDT)
+        trc20_url = f"https://apilist.tronscanapi.com/api/token_trc20/transfers?limit=50&start=0&relatedAddress={wallet}"
         res_trc20 = requests.get(trc20_url, headers=headers, timeout=10)
+        
         if res_trc20.status_code == 200:
-            for tx in res_trc20.json().get("data", []):
-                from_addr = tx.get("from", "").strip()
-                to_addr = tx.get("to", "").strip()
+            for tx in res_trc20.json().get("token_transfers", []):
+                from_addr = tx.get("from_address", "")
+                to_addr = tx.get("to_address", "")
                 
                 if direction == "incoming" and to_addr != wallet: continue
                 if direction == "outgoing" and from_addr != wallet: continue
                     
-                ts_ms = tx.get("block_timestamp")
+                ts_ms = tx.get("block_ts")
                 timestamp = datetime.utcfromtimestamp(ts_ms / 1000.0).isoformat() + "Z" if ts_ms else None
                 
-                decimals = int(tx.get("token_info", {}).get("decimals", 6))
-                symbol = tx.get("token_info", {}).get("symbol", "TRC20").upper()
-                amt = float(tx.get("value", 0)) / (10 ** decimals) if decimals else float(tx.get("value", 0))
+                token_info = tx.get("tokenInfo") or {}
+                decimals = int(token_info.get("tokenDecimal") or 6)
+                symbol = token_info.get("tokenAbbr", "TRC20").upper()
                 
-                transfers.append({
-                    "hash": tx.get("transaction_id"), "from": from_addr, "to": to_addr, 
-                    "value": str(amt), "asset": symbol, "metadata": {"blockTimestamp": timestamp}
-                })
+                raw_amt = float(tx.get("quant", 0))
+                amt = raw_amt / (10 ** decimals) if decimals else raw_amt
+                
+                # Exclude zero-value spam TRC-20 transfers
+                if amt > 0:
+                    transfers.append({
+                        "hash": tx.get("transaction_id"), "from": from_addr, "to": to_addr, 
+                        "value": str(amt), "asset": symbol, "metadata": {"blockTimestamp": timestamp}
+                    })
 
-        # 2. Secondary: TronScan for Approvals (Catches Address Poisoning Scams) ## deleted
-
+        # 2. Fetch Native TRX Transfers
+        trx_url = f"https://apilist.tronscanapi.com/api/transfer?sort=-timestamp&count=true&limit=50&start=0&address={wallet}"
+        res_trx = requests.get(trx_url, headers=headers, timeout=10)
+        
+        if res_trx.status_code == 200:
+            for tx in res_trx.json().get("data", []):
+                from_addr = tx.get("transferFromAddress", "")
+                to_addr = tx.get("transferToAddress", "")
+                
+                if direction == "incoming" and to_addr != wallet: continue
+                if direction == "outgoing" and from_addr != wallet: continue
+                    
+                ts_ms = tx.get("timestamp")
+                timestamp = datetime.utcfromtimestamp(ts_ms / 1000.0).isoformat() + "Z" if ts_ms else None
+                
+                token_info = tx.get("tokenInfo") or {}
+                decimals = int(token_info.get("tokenDecimal") or 0)
+                symbol = token_info.get("tokenAbbr", "TRX").upper()
+                
+                raw_amt = float(tx.get("amount_str", tx.get("amount", 0)))
+                amt = raw_amt / (10 ** decimals) if decimals else raw_amt
+                
+                # Exclude zero-value spam TRX transfers
+                if amt > 0:
+                    transfers.append({
+                        "hash": tx.get("transactionHash"), "from": from_addr, "to": to_addr, 
+                        "value": str(amt), "asset": symbol, "metadata": {"blockTimestamp": timestamp}
+                    })
                 
     except Exception as e:
-        print(f"Tron API Fallback Error: {e}")
+        print(f"Tron Unified API Fallback Error: {e}")
         
     return transfers
 
@@ -421,7 +535,21 @@ def trace_fund_flow(address, max_hops, wallet_cap=None, max_total_wallets=None, 
         address = address.lower()
 
     graph = nx.MultiDiGraph()
-    graph.add_node(address, type="reported_wallet", hop=0)
+    
+    # Check if the starting address itself is a known VASP/exchange in PostgreSQL
+    root_entity = get_entity_data(address)
+    is_root_vasp = root_entity.get("is_vasp", False)
+    root_name = root_entity.get("name", "Reported Suspect")
+    
+    # Add the root node with dynamic VASP attribution
+    graph.add_node(
+        address, 
+        type="exchange" if is_root_vasp else "reported_wallet",
+        entity_name=root_name if is_root_vasp else "Reported Suspect",
+        risk_score=0 if is_root_vasp else 50,
+        hop=0,
+        risk_reasons=["Safe: Known Exchange"] if is_root_vasp else ["Involved in fund flow"]
+    )
 
     first_hop_transfers = []
     first_hop_transfers.extend(get_transfers(address, "incoming", blockchain))
@@ -581,9 +709,12 @@ def trace_fund_flow(address, max_hops, wallet_cap=None, max_total_wallets=None, 
     except nx.NetworkXError:
         graph.nodes[address]["hop"] = 0
 
-    graph.nodes[address]["type"] = "reported_wallet"
+    # Preserve VASP status if the origin address itself is a known exchange
+    root_entity = get_entity_data(address)
+    is_root_vasp = root_entity.get("is_vasp", False)
+    
+    graph.nodes[address]["type"] = "exchange" if is_root_vasp else "reported_wallet"
     graph.nodes[address]["hop"] = 0
-
     # --------------------------------------------------
     # ML ANOMALY DETECTION & EXPLAINABLE RISK
     # --------------------------------------------------
