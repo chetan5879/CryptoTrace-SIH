@@ -96,6 +96,38 @@ Open `index.html` via Live Server (Port 5500) or your preferred local web server
 
 5. **ML Anomaly Injection:** The Isolation Forest model evaluates the total graph matrix, tagging nodes that mathematically deviate from standard human transaction behavior.
 
+🚀 Recent Architecture & Feature Updates
+1. Multi-Chain Universal Blockchain Adapters
+
+    EVM Networks (Ethereum, Polygon, BNB Chain): Integrated high-performance RPC querying via Alchemy to track external, internal, and ERC-20 token movements.
+
+    Bitcoin (UTXO): Integrated the open-source Mempool.space API to parse native BTC inputs, outputs, and transaction timestamps without requiring paid API keys.
+
+    Tron (TRC-20 & TRX): Developed a Cloudflare-bypassed scraping adapter targeting TronScan to extract active TRC-20 USDT and native TRX capital flows.
+
+2. Autonomous OSINT Threat Ingestion
+
+    Live OFAC Sanctions Sync: Implemented a background asynchronous task (asyncio) that queries the live U.S. Treasury OFAC sanctioned address feeds every 24 hours.
+
+    Automated Database Patching: Automatically upserts newly blacklisted threat actors directly into the PostgreSQL known_entities table on server startup without requiring system reboots.
+
+3. Smart Address Auto-Detection & Mismatch Safeguard
+
+    Regex Format Recognition: Built real-time input parsers that automatically identify whether a pasted string is an EVM (0x...), Tron (T...), or Bitcoin (1/3/bc1) address.
+
+    Network Alignment & Error Banning: Automatically switches the blockchain dropdown to match the detected asset and triggers a strict mismatch guard banner if an investigator attempts to query an invalid network combination.
+
+4. Advanced VASP & Mixer Attribution Engine
+
+    PostgreSQL-Powered Classification: Dynamically attributes nodes during graph traversal, distinguishing between centralized exchanges (Safe Off-Ramps/VASPs) and privacy mixers/illicit pools (Critical Risk).
+
+    Machine Learning Anomaly Detection: Leverages an Isolation Forest model alongside heuristic rules to detect high fan-in/fan-out consolidation, round-amount structuring, peeling chains, and rapid 24-hour turnarounds.
+
+5. Court-Admissible NCRP Forensic Dossiers
+
+    Automated PDF Generation: Compiles multi-hop graph results into structured, professional PDF dossiers using jsPDF and auto-tables.
+
+    Official Law Enforcement Stamping: Automatically stamps reports with the active investigator's profile (Officer Name, Badge/ID, and Cyber Crime Unit) for immediate legal freeze-notice submission.
 ## ⚖️ Disclaimer
 
 *This software is developed as a prototype for the Smart India Hackathon. It is intended strictly for authorized law enforcement, academic research, and cybersecurity analysis. Do not utilize this tool for unauthorized surveillance.*
