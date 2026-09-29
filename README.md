@@ -1,3 +1,7 @@
+# CryptoTrace 3.0
+
+**Start with [UPGRADE_V3.md](UPGRADE_V3.md).** This supersedes older feature-status statements below. Run the additive migration and a separate worker.
+
 # CryptoTrace v2.4.0 — online attribution and cache
 
 This is a development release based on the four supplied files. It is **not approved for government production deployment**. Use synthetic or authorised test cases until the acceptance work below is complete.

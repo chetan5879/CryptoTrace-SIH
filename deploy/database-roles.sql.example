@@ -11,3 +11,7 @@ GRANT USAGE,SELECT ON SEQUENCE ct_audit_id_seq TO cryptotrace_app;
 REVOKE CREATE ON SCHEMA public FROM PUBLIC;
 
 GRANT SELECT,INSERT,UPDATE ON ct_attribution_sources,ct_online_entities TO cryptotrace_app;
+
+-- v3 additive tables; run as database owner after migration.
+GRANT SELECT,INSERT ON ct_complaints,ct_case_events,ct_case_evidence,ct_raw_evidence,ct_cross_links,ct_watch_seen TO cryptotrace_app;
+GRANT SELECT,INSERT,UPDATE ON ct_case_wallets,ct_jobs,ct_watchlists,ct_alerts,ct_wallet_cache,ct_event_index,ct_asset_registry,ct_bridge_registry TO cryptotrace_app;

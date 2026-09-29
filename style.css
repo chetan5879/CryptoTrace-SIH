@@ -22,3 +22,5 @@ body:has(#traceModal.show){overflow:hidden}
 .entity-registry>h3,.entity-registry>p,.entity-registry>form{margin-left:24px;margin-right:24px}.entity-registry>h3{margin-top:22px}.entity-registry>form{padding-bottom:22px}
 #txContext,#transactions .card>.helper-text{padding:16px 20px 0;margin:0}
 .entity-registry input[type=checkbox]{display:inline-block;width:18px;height:18px;padding:0;vertical-align:middle;margin:0 6px 0 0}.entity-registry table{min-width:720px}
+
+.workspace-launch{position:fixed;bottom:12px;right:18px;z-index:40;background:#075d95;color:white;padding:12px 18px;border-radius:8px;text-decoration:none;font:600 14px sans-serif}.signed-out .workspace-launch{display:none}

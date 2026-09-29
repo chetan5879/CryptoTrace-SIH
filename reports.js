@@ -29,7 +29,7 @@ async function generateReport(){
         if(tab?.network&&!tab.ready)await new Promise(resolve=>{let attempts=0;const timer=setInterval(()=>{if(tab.ready||++attempts>=60){clearInterval(timer);resolve();}},100);});
         const doc=new window.jspdf.jsPDF({orientation:'landscape',unit:'mm',format:'a4',compress:true});
         doc.addFileToVFS('report-regular.ttf',fonts[0]);doc.addFont('report-regular.ttf','Report','normal');doc.addFileToVFS('report-bold.ttf',fonts[1]);doc.addFont('report-bold.ttf','Report','bold');doc.setFont('Report','normal');
-        doc.setProperties({title:`CryptoTrace dossier - ${data.case_id}`,subject:'Automated investigation draft for analyst review',author:'CryptoTrace',creator:'CryptoTrace 2.4.0'});
+        doc.setProperties({title:`CryptoTrace dossier - ${data.case_id}`,subject:'Automated investigation draft for analyst review',author:'CryptoTrace',creator:'CryptoTrace 3.0.0'});
         const W=297,H=210,M=17,C={navy:[14,43,66],blue:[12,112,171],muted:[93,115,134],line:[215,229,238],paper:[243,248,252]};
         let section='CASE OVERVIEW',y=42;const pageSections={1:section};const generated=new Date().toISOString();
         const str=value=>String(value??'Not recorded').replace(/\u2011/g,'-');
@@ -56,6 +56,14 @@ async function generateReport(){
         newPage('WALLET & ENTITY REGISTER');
         paragraph('This register maps each graph node to its address, role, attribution and reasons. Full addresses, observed hop distance and recorded reasons. Unknown scores are not zero. Exchange labels identify leads and do not establish innocence.',8);
         table(['HOP','ADDRESS / IDENTIFIER','ROLE / ENTITY','SCORE','RECORDED REASONS'],data.nodes.map(n=>[n.hop,n.id,`${str(n.type).replaceAll('_',' ')}${n.entity_name?' / '+n.entity_name:''}`,scoreText(n.risk_score),(n.risk_reasons||[]).join('; ')||'No recorded reasons']),{columnStyles:{0:{cellWidth:12},1:{cellWidth:74},2:{cellWidth:39},3:{cellWidth:20},4:{cellWidth:118}}});
+        newPage('PATTERNS AND MACHINE LEARNING');
+        paragraph('Scores are triage policy weights, not calibrated fraud probabilities. Unreviewed exact mixer matches from approved sources contribute 60 points once. Historical labels require source-date review.',8);
+        table(['PATTERN','WALLET','EVIDENCE EVENTS','INTERPRETATION'],(data.patterns||[]).map(p=>[p.kind,p.wallet,(p.event_ids||[]).join('\n'),p.explanation]));
+        paragraph('ML status: '+(data.ml?.status||'Not recorded')+'; fusion enabled: '+Boolean(data.ml?.fusion_enabled),8);
+        if(data.ml?.model_sha256)paragraph('Model/reference SHA-256: '+data.ml.model_sha256,8);
+        paragraph(data.ml?.interpretation||data.ml?.reason||'See the saved snapshot for features and model metadata.',8);
+        table(['WALLET / ASSET','ANOMALY SCORE','DECISION','INPUT DEVIATIONS'],(data.ml?.results||[]).map(r=>[r.wallet+' / '+r.asset_id,r.anomaly_score,r.anomalous?'Anomalous':'Not flagged',JSON.stringify(r.feature_deviations)]));
+        paragraph('Raw source evidence references: '+(data.raw_evidence_refs||[]).join(', '),8);
         newPage('RETRIEVAL COVERAGE & LIMITS');
         if(data.attribution_diagnostics)paragraph('Online attribution coverage: '+JSON.stringify(data.attribution_diagnostics),8);
         paragraph(`Scoring version: ${data.scoring_version||'Not recorded in this snapshot'}`,8);
@@ -70,7 +78,7 @@ async function generateReport(){
         paragraph('Review the originating complaint, reconcile significant transfers with independent chain records, and verify entity-label sources and dates before making an attribution. A high score is a triage signal; a low or unknown score does not clear an address. Graph connections do not prove common control or that the same stolen funds moved.');
         heading('Integrity and provenance');
         paragraph('The SHA-256 printed on the case overview identifies the canonical saved trace payload before the response-only evidence_sha256 field is added. It is not the hash of this PDF, a digital signature, an independent timestamp or a complete chain of custody. Browser-generated exports can be modified; retain the trusted stored snapshot and controlled source evidence separately.');
-        paragraph(`Dossier generated (UTC): ${generated}. Report renderer: CryptoTrace 2.4.0. API keys, passwords and login-session tokens are not included.`,8);
+        paragraph(`Dossier generated (UTC): ${generated}. Report renderer: CryptoTrace 3.0.0. API keys, passwords and login-session tokens are not included.`,8);
         heading('Review worksheet - complete outside the application');
         table(['REVIEW FIELD','TO BE COMPLETED BY THE RESPONSIBLE OFFICER'],[['Official complaint / FIR linkage',''],['Independent verification references / exhibits',''],['Source evidence preservation / custody reference',''],['Analyst name, designation, signature and date',''],['Reviewer name, designation, signature and date','']],{columnStyles:{0:{cellWidth:90},1:{cellWidth:173}}});
         paragraph('This worksheet is not the statutory electronic-evidence certificate. Where applicable, the responsible parties and expert must address section 63 and the Schedule of the Bharatiya Sakshya Adhiniyam, 2023, with agency/legal guidance. No signatures or official approval are generated by CryptoTrace.',8);
@@ -79,7 +87,7 @@ async function generateReport(){
             doc.setTextColor(255,255,255);doc.setFont('Report','bold');doc.setFontSize(17);doc.text('CRYPTOTRACE',M,13);doc.setFontSize(9);doc.text('BLOCKCHAIN INVESTIGATION DOSSIER',M,21);
             doc.setFont('Report','normal');doc.setFontSize(8);doc.text('INVESTIGATOR REVIEW DRAFT',W-M,12,{align:'right'});doc.setFontSize(7);doc.text(pageSections[p]||section,W-M,21,{align:'right'});
             doc.setDrawColor(...C.line);doc.line(M,H-12,W-M,H-12);doc.setFontSize(7);doc.setTextColor(...C.muted);
-            const ref=String(data.case_id);doc.text(`Case ${ref.length>55?ref.slice(0,52)+'...':ref} | CryptoTrace 2.4.0 | Not an approval or digital signature`,M,H-7);doc.text(`${p} / ${doc.internal.getNumberOfPages()}`,W-M,H-7,{align:'right'});
+            const ref=String(data.case_id);doc.text(`Case ${ref.length>55?ref.slice(0,52)+'...':ref} | CryptoTrace 3.0.0 | Not an approval or digital signature`,M,H-7);doc.text(`${p} / ${doc.internal.getNumberOfPages()}`,W-M,H-7,{align:'right'});
         }
         doc.save(`${String(data.case_id).replace(/[^A-Za-z0-9_.-]/g,'_')}_${String(data.trace_id).replace(/[^A-Za-z0-9_.-]/g,'_')}_draft.pdf`);
     }catch(error){alert(`Could not generate dossier: ${error.message}`);}finally{reportBusy=false;buttons.forEach(b=>b.disabled=false);}

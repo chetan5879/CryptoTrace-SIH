@@ -53,3 +53,77 @@ CREATE TABLE IF NOT EXISTS ct_online_entities (
  checked_at TIMESTAMPTZ NOT NULL DEFAULT now(), expires_at TIMESTAMPTZ NOT NULL,
  PRIMARY KEY(blockchain,wallet_address)
 );
+
+-- v3: additive case workspace, durable queue and evidence index.
+CREATE TABLE IF NOT EXISTS ct_complaints (
+ case_id TEXT PRIMARY KEY REFERENCES ct_cases(case_id), metadata JSONB NOT NULL,
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS ct_case_wallets (
+ case_id TEXT NOT NULL REFERENCES ct_cases(case_id), blockchain TEXT NOT NULL,
+ wallet_address TEXT NOT NULL, PRIMARY KEY(case_id,blockchain,wallet_address)
+);
+INSERT INTO ct_case_wallets SELECT case_id,blockchain,wallet_address FROM ct_cases ON CONFLICT DO NOTHING;
+CREATE TABLE IF NOT EXISTS ct_jobs (
+ id TEXT PRIMARY KEY, case_id TEXT NOT NULL REFERENCES ct_cases(case_id), user_id TEXT NOT NULL REFERENCES ct_users(id),
+ kind TEXT NOT NULL CHECK(kind IN ('trace','monitor')), payload JSONB NOT NULL,
+ state TEXT NOT NULL DEFAULT 'queued' CHECK(state IN ('queued','running','done','failed','cancelled')),
+ attempts INTEGER NOT NULL DEFAULT 0, lease_token TEXT, lease_until TIMESTAMPTZ,
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now(), finished_at TIMESTAMPTZ, result JSONB, error TEXT
+);
+CREATE INDEX IF NOT EXISTS ct_jobs_queue ON ct_jobs(state,created_at);
+CREATE TABLE IF NOT EXISTS ct_watchlists (
+ id TEXT PRIMARY KEY, case_id TEXT NOT NULL REFERENCES ct_cases(case_id), user_id TEXT NOT NULL REFERENCES ct_users(id),
+ blockchain TEXT NOT NULL, wallet_address TEXT NOT NULL, interval_seconds INTEGER NOT NULL CHECK(interval_seconds BETWEEN 300 AND 86400),
+ threshold INTEGER NOT NULL CHECK(threshold BETWEEN 0 AND 100), enabled BOOLEAN NOT NULL DEFAULT TRUE,
+ next_poll TIMESTAMPTZ NOT NULL DEFAULT now(), baseline_set BOOLEAN NOT NULL DEFAULT FALSE,
+ UNIQUE(case_id,blockchain,wallet_address)
+);
+CREATE TABLE IF NOT EXISTS ct_alerts (
+ id TEXT PRIMARY KEY, case_id TEXT NOT NULL REFERENCES ct_cases(case_id), watch_id TEXT REFERENCES ct_watchlists(id),
+ dedup_key TEXT UNIQUE NOT NULL, severity TEXT NOT NULL, payload JSONB NOT NULL,
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now(), acknowledged_at TIMESTAMPTZ, acknowledged_by TEXT REFERENCES ct_users(id)
+);
+CREATE TABLE IF NOT EXISTS ct_watch_seen (
+ watch_id TEXT NOT NULL REFERENCES ct_watchlists(id), event_id TEXT NOT NULL, PRIMARY KEY(watch_id,event_id)
+);
+CREATE TABLE IF NOT EXISTS ct_wallet_cache (
+ blockchain TEXT NOT NULL, wallet_address TEXT NOT NULL, payload JSONB NOT NULL,
+ diagnostics JSONB NOT NULL, evidence_refs JSONB NOT NULL DEFAULT '[]', fetched_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+ PRIMARY KEY(blockchain,wallet_address)
+);
+CREATE TABLE IF NOT EXISTS ct_raw_evidence (
+ sha256 TEXT PRIMARY KEY, provider TEXT NOT NULL, payload JSONB NOT NULL, fetched_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS ct_event_index (
+ blockchain TEXT NOT NULL, event_id TEXT NOT NULL, sender TEXT NOT NULL, receiver TEXT NOT NULL,
+ tx_hash TEXT NOT NULL, asset_id TEXT NOT NULL, occurred_at TIMESTAMPTZ, payload JSONB NOT NULL,
+ PRIMARY KEY(blockchain,event_id)
+);
+CREATE INDEX IF NOT EXISTS ct_event_sender ON ct_event_index(blockchain,sender,occurred_at);
+CREATE INDEX IF NOT EXISTS ct_event_receiver ON ct_event_index(blockchain,receiver,occurred_at);
+CREATE INDEX IF NOT EXISTS ct_event_tx ON ct_event_index(blockchain,tx_hash);
+CREATE TABLE IF NOT EXISTS ct_case_events (
+ case_id TEXT NOT NULL REFERENCES ct_cases(case_id), blockchain TEXT NOT NULL, event_id TEXT NOT NULL,
+ PRIMARY KEY(case_id,blockchain,event_id), FOREIGN KEY(blockchain,event_id) REFERENCES ct_event_index(blockchain,event_id)
+);
+CREATE TABLE IF NOT EXISTS ct_case_evidence (
+ case_id TEXT NOT NULL REFERENCES ct_cases(case_id), sha256 TEXT NOT NULL REFERENCES ct_raw_evidence(sha256),
+ PRIMARY KEY(case_id,sha256)
+);
+CREATE TABLE IF NOT EXISTS ct_cross_links (
+ id TEXT PRIMARY KEY, case_id TEXT NOT NULL REFERENCES ct_cases(case_id), payload JSONB NOT NULL,
+ evidence_sha256 TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), UNIQUE(case_id,evidence_sha256)
+);
+CREATE TABLE IF NOT EXISTS ct_asset_registry (
+ blockchain TEXT NOT NULL, asset_id TEXT NOT NULL, canonical_asset TEXT NOT NULL,
+ source TEXT NOT NULL, updated_by TEXT NOT NULL REFERENCES ct_users(id), PRIMARY KEY(blockchain,asset_id)
+);
+CREATE TABLE IF NOT EXISTS ct_bridge_registry (
+ blockchain TEXT NOT NULL, wallet_address TEXT NOT NULL, name TEXT NOT NULL, source TEXT NOT NULL,
+ updated_by TEXT NOT NULL REFERENCES ct_users(id), PRIMARY KEY(blockchain,wallet_address)
+);
+DROP TRIGGER IF EXISTS ct_raw_immutable ON ct_raw_evidence;
+CREATE TRIGGER ct_raw_immutable BEFORE UPDATE OR DELETE ON ct_raw_evidence FOR EACH ROW EXECUTE FUNCTION ct_prevent_mutation();
+DROP TRIGGER IF EXISTS ct_cross_immutable ON ct_cross_links;
+CREATE TRIGGER ct_cross_immutable BEFORE UPDATE OR DELETE ON ct_cross_links FOR EACH ROW EXECUTE FUNCTION ct_prevent_mutation();

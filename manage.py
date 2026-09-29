@@ -9,6 +9,7 @@ parser=argparse.ArgumentParser()
 sub=parser.add_subparsers(dest='command',required=True)
 sub.add_parser('migrate')
 sub.add_parser('refresh-attribution')
+sub.add_parser('check-deployment')
 create=sub.add_parser('create-user')
 create.add_argument('username')
 create.add_argument('--role',choices=['admin','investigator'],default='investigator')
@@ -18,6 +19,17 @@ args=parser.parse_args()
 if args.command=='migrate':
     init_db()
     print('Additive migration applied. Legacy cases/entities retained separately.')
+elif args.command=='check-deployment':
+    import os,json
+    checks={}
+    with db() as cur:
+        for table in ('ct_jobs','ct_watchlists','ct_alerts','ct_event_index','ct_raw_evidence','ct_complaints'):
+            cur.execute('SELECT to_regclass(%s) AS name',(table,));checks[table]=bool(cur.fetchone()['name'])
+        cur.execute("SELECT count(*) AS n FROM ct_jobs WHERE state='queued' AND created_at<now()-interval '15 minutes'");checks['stale_queued_jobs']=cur.fetchone()['n']
+    checks['https_origin']=os.getenv('APP_ORIGIN','').startswith('https://')
+    checks['production_mode']=os.getenv('APP_ENV')=='production'
+    checks['agency_connector']='pending official access'
+    print(json.dumps(checks,indent=2));print('Configuration check only. Run integration/load/security acceptance checks before deployment.')
 elif args.command=='refresh-attribution':
     from attribution import refresh_sources
     result=refresh_sources(force=True)

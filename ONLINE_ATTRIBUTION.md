@@ -60,7 +60,7 @@ Many source records are historical. Fetching a 2022 disclosure today does not ma
 
 ## What investigators see
 
-Origin remains purple; external VASP matches use black and mixer matches use brown. Hover reasons state external/unreviewed status, the source date and retrieval date. The report's VASP & Mixer Leads table records the distinction too. An automatically retrieved mixer label **does not add the local analyst-reviewed mixer risk penalty**. It becomes eligible for that rule only after an administrator reviews and saves the local classification.
+Origin remains purple; external VASP matches use black and mixer matches use brown. Hover reasons state external/unreviewed status, the source date and retrieval date. The report's VASP & Mixer Leads table records the distinction too. In v3 an exact, unconflicted mixer match from the approved source pipeline contributes +60 once while retaining its external/unreviewed status and historical date. Local corrections still take priority.
 
 In Diagnostics & Setup, click Check online sources to see last retrieval dates, failures and cached matches. Administrators can click Review label to copy a candidate into the local registry form. Verify it, correct any details, then click Save attribution. Copying the candidate into the form alone does not approve it. Local review does not imply independent verification by the software.
 

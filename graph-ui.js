@@ -148,7 +148,7 @@ function showNodeHover(tab,id,pinned=false) {
     $('focusNode').hidden=false;$('investigateAddress').hidden=false;
     text('nodeLabel',`${node.type==='transaction'?'UTXO transaction':node.entity_name||'Wallet'} · ${scoreText(node.risk_score)}`);
     $('selectedAddress').value=node.id; text('nodeShortAddress',shortAddress(node.id));
-    text('nodeReasons',(node.risk_reasons||[]).join('\n')||'No flags recorded; check retrieval coverage.');
+    text('nodeReasons',((node.risk_reasons||[]).join('\n')||'No flags recorded; check retrieval coverage.')+'\nML: '+JSON.stringify(node.ml||'Not recorded')); 
     text('copyFeedback','');$('copyAddress').disabled=false;$('investigateAddress').disabled=['transaction','script'].includes(node.type);
     text('hoverState',pinned?'Pinned inspection · close to dismiss':'Hover inspection · click node to pin');
     const card=$('nodeInspector');card.hidden=false;
@@ -166,8 +166,8 @@ function activateGraph(id) {
     $('traceModal').classList.add('show');text('graphCount',graphWorkspaces.size);$('graphLayout').value=tab.layout;
     const data=tab.data;text('coverageBanner',`${data.status.toUpperCase().replaceAll('_',' ')} · ${data.coverage_note}`);$('coverageBanner').dataset.status=data.status;
     $('coverageDetails').closest('details').open=['unavailable','partial'].includes(data.status);
-    text('coverageDetails',JSON.stringify({fetched_at:data.fetched_at,providers:data.diagnostics,attribution:data.attribution_diagnostics,limits:data.truncated_wallets},null,2));
-    const result=document.querySelector('.trace-result');result.replaceChildren();for(const [label,value]of [['Triage score',scoreText(data.risk_score)],['Nodes',data.node_count],['Transfers',data.edge_count],['Case',data.case_id]]){const field=element('div');field.append(element('span',label),element('strong',String(value)));result.append(field);}
+    text('coverageDetails',JSON.stringify({fetched_at:data.fetched_at,providers:data.diagnostics,attribution:data.attribution_diagnostics,limits:data.truncated_wallets,ml:data.ml,patterns:data.patterns,raw_evidence_refs:data.raw_evidence_refs},null,2));
+    const result=document.querySelector('.trace-result');result.replaceChildren();for(const [label,value]of [['Triage score',scoreText(data.risk_score)],['ML status',data.ml?.status||'Not recorded'],['Nodes',data.node_count],['Transfers',data.edge_count],['Case',data.case_id]]){const field=element('div');field.append(element('span',label),element('strong',String(value)));result.append(field);}
     const picker=$('nodePicker');picker.replaceChildren(new Option('Inspect a node (keyboard / touch)',''));for(const n of data.nodes)picker.add(new Option(`${shortAddress(n.id)} · hop ${n.hop}`,n.id));
     let leads=$('graphEntityLeads');if(!leads){leads=element('div');leads.id='graphEntityLeads';document.querySelector('.trace-result').after(leads);}leads.replaceChildren();
     const attributed=data.nodes.filter(n=>n.is_vasp||n.is_mixer||['exchange','mixer'].includes(n.type));

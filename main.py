@@ -32,7 +32,7 @@ async def lifespan(app):
         cur.execute('SELECT 1 FROM ct_users LIMIT 1')
     yield
 
-app = FastAPI(title='CryptoTrace', version='2.4.0', lifespan=lifespan, docs_url=None if PRODUCTION else '/docs', redoc_url=None)
+app = FastAPI(title='CryptoTrace', version='3.0.0', lifespan=lifespan, docs_url=None if PRODUCTION else '/docs', redoc_url=None)
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost,testserver').split(','))
 
 @app.middleware('http')
@@ -133,6 +133,7 @@ def create_case(case: CaseModel, request: Request, user=Depends(require_user)):
             old = visible_case(cur,case.case_id,user)
             if (old['wallet_address'],old['blockchain'],old['fraud_type'],old['max_hops']) != (wallet,case.blockchain,case.fraud_type,case.max_hops):
                 raise HTTPException(409,'Case reference already has different parameters. Use a new reference.')
+        cur.execute('INSERT INTO ct_case_wallets VALUES (%s,%s,%s) ON CONFLICT DO NOTHING',(case.case_id,case.blockchain,wallet))
         audit(cur,user['id'],'case_opened',request,{'case_id':case.case_id})
     return {'status':'success','case_id':case.case_id}
 
@@ -158,21 +159,9 @@ def run_trace(case_id: str, options: TraceOptions, request: Request, user=Depend
         case = visible_case(lock,case_id,user)
         with db() as cur:
             audit(cur,user['id'],'trace_started',request,{'case_id':case_id})
-        resolver = AttributionResolver(user['id'])
-        entity_lookup = resolver.lookup
+        from services import execute
         try:
-            data = trace_fund_flow(case['wallet_address'],case['max_hops'],options.fan_threshold,case['blockchain'],entity_lookup)
-            data['attribution_diagnostics'] = resolver.diagnostics
-            trace_id = str(uuid.uuid4())
-            data.update(trace_id=trace_id,case_id=case_id,fraud_type=case['fraud_type'],investigator=user['username'])
-            canonical = json.dumps(data,sort_keys=True,separators=(',',':'),ensure_ascii=False)
-            sha = hashlib.sha256(canonical.encode()).hexdigest()
-            with db() as cur:
-                cur.execute('INSERT INTO ct_traces(id,case_id,user_id,payload,sha256) VALUES (%s,%s,%s,%s,%s)',
-                    (trace_id,case_id,user['id'],Json(data),sha))
-                cur.execute('UPDATE ct_cases SET risk_score=%s,status=%s WHERE case_id=%s', (data['risk_score'],data['status'],case_id))
-                audit(cur,user['id'],'trace_saved',request,{'case_id':case_id,'trace_id':trace_id,'sha256':sha,'status':data['status']})
-            return {**data,'evidence_sha256':sha}
+            return execute(case,user,case['wallet_address'],case['blockchain'],case['max_hops'],options.fan_threshold)
         except Exception:
             with db() as cur:
                 audit(cur,user['id'],'trace_failed',request,{'case_id':case_id})
@@ -272,6 +261,9 @@ def health(user=Depends(require_user)):
     return {'database':'connected','providers':{name:'configured; not live-tested' if os.getenv(key) else 'not configured'
         for name,key in [('Alchemy','ALCHEMY_API_KEY'),('BNB / NodeReal','NODEREAL_API_KEY'),('TronScan','TRONSCAN_API_KEY')]}}
 
+from workspace_api import router as workspace_router
+app.include_router(workspace_router)
+
 # Serve an explicit public asset allowlist. Never expose .env, source or database files.
 @app.get('/')
 def index():
@@ -285,6 +277,6 @@ def vendor_asset(filename: str):
 
 @app.get('/{filename}')
 def static_file(filename: str):
-    if filename not in ('style.css','script.js','events.js','graph-ui.js','reports.js'):
+    if filename not in ('style.css','script.js','events.js','graph-ui.js','reports.js','workspace.html','workspace.js','workspace.css'):
         raise HTTPException(404,'Not found')
     return FileResponse(ROOT/filename)

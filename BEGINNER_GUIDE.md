@@ -1,3 +1,7 @@
+# Version 3.0 update
+
+Read `UPGRADE_V3.md` first for the current ML/scoring behaviour, unified workspace and separate worker. The older walkthrough below describes the original dashboard.
+
 # CryptoTrace 2.3: a beginner's guide
 
 This guide describes the code in this release, not the older project handoff. Read it alongside the included README and TEST_REPORT. The application is an investigation prototype: it retrieves supported blockchain records, displays their relationships, stores a case snapshot and produces a review dossier. It does not determine guilt, identify every wallet owner or certify a report for court.
