@@ -1,818 +1,290 @@
-import os
-import time
-import uuid
+"""CryptoTrace: authenticated local-first investigation server."""
+import hashlib
 import json
-import base64
-import asyncio
-from datetime import datetime
-from decimal import Decimal, InvalidOperation
+import logging
+import os
+import secrets
+import uuid
+from contextlib import asynccontextmanager
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from typing import Literal
+from fastapi import FastAPI, Depends, HTTPException, Request, Response
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from pydantic import BaseModel, Field
+from psycopg2.extras import Json
+from db import db, init_db, audit
+from security import require_user, require_admin, origin_check, digest, COOKIE, hasher, DUMMY_HASH, check_password, visible_case
+from ingestion import validate_address, CHAINS
+from graph_engine import trace_fund_flow
+from attribution import AttributionResolver, refresh_sources, source_status
 
-import requests
-import numpy as np
-from sklearn.ensemble import IsolationForest
-import networkx as nx
-from web3 import Web3
+ROOT = Path(__file__).resolve().parent
+PRODUCTION = os.getenv('APP_ENV', 'production') != 'development'
 
-from dotenv import load_dotenv
-import psycopg2
-from psycopg2.extras import RealDictCursor
-from pydantic import BaseModel
-from fastapi import FastAPI, HTTPException, BackgroundTasks
-from fastapi.middleware.cors import CORSMiddleware
+@asynccontextmanager
+async def lifespan(app):
+    if PRODUCTION and not os.getenv('APP_ORIGIN', '').startswith('https://'):
+        raise RuntimeError('Production requires an HTTPS APP_ORIGIN')
+    # Run `python manage.py migrate` explicitly using the migration role before starting.
+    with db() as cur:
+        cur.execute('SELECT 1 FROM ct_users LIMIT 1')
+    yield
 
-# 1. Load environment variables first
-load_dotenv()
+app = FastAPI(title='CryptoTrace', version='2.4.0', lifespan=lifespan, docs_url=None if PRODUCTION else '/docs', redoc_url=None)
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost,testserver').split(','))
 
-# 2. Mock Entity Database (Phase 5)
+@app.middleware('http')
+async def secure_headers(request: Request, call_next):
+    try:
+        response = await call_next(request)
+    except Exception:
+        logging.exception('Unhandled request failure')
+        response = JSONResponse({'detail':'Internal error; contact the system administrator'}, status_code=500)
+    response.headers.update({'X-Content-Type-Options':'nosniff', 'X-Frame-Options':'DENY',
+        'Referrer-Policy':'no-referrer', 'Cache-Control':'no-store',
+        'Permissions-Policy':'geolocation=(), camera=(), microphone=()',
+        'Content-Security-Policy':"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'"})
+    if PRODUCTION:
+        response.headers['Strict-Transport-Security'] = 'max-age=31536000'
+    return response
 
-# KNOWN ENTITIES (VASPs, MIXERS & INDIAN EXCHANGES)
+class Login(BaseModel):
+    username: str = Field(min_length=3,max_length=64,pattern=r'^[A-Za-z0-9_.-]+$')
+    password: str = Field(min_length=1,max_length=256)
 
+@app.post('/auth/login')
+def login(body: Login, request: Request, response: Response):
+    origin_check(request)
+    username = body.username.lower()
+    ip = request.client.host if request.client else 'unknown'
+    with db() as cur:
+        # Serialize attempts across workers; rate limits apply to successes and failures.
+        cur.execute('SELECT pg_advisory_xact_lock(hashtext(%s))', ('login:'+ip,))
+        cur.execute('SELECT pg_advisory_xact_lock(hashtext(%s))', ('username:'+username,))
+        cur.execute("SELECT count(*) AS n FROM ct_audit WHERE action IN ('login_failed','login_success') AND occurred_at>now()-interval '15 minutes' AND (ip=%s OR detail->>'username'=%s)", (ip,username))
+        limited = cur.fetchone()['n'] >= 10
+        if limited:
+            raise HTTPException(429, 'Too many sign-in attempts; try again after 15 minutes')
+        cur.execute('SELECT * FROM ct_users WHERE username=%s', (username,))
+        user = cur.fetchone()
+        good = check_password(body.password, user['password_hash'] if user else DUMMY_HASH)
+        if not good or not user or not user['active']:
+            audit(cur,None,'login_failed',request,{'username':username})
+            failure = True
+        else:
+            failure = False
+            token, csrf = secrets.token_urlsafe(48), secrets.token_urlsafe(32)
+            # Re-authentication invalidates the current browser's previous session.
+            cur.execute('DELETE FROM ct_sessions WHERE token_hash=%s OR expires_at<now()', (digest(request.cookies.get(COOKIE,'')),))
+            cur.execute('INSERT INTO ct_sessions(token_hash,user_id,csrf,expires_at,ip,user_agent) VALUES (%s,%s,%s,%s,%s,%s)',
+                (digest(token),user['id'],csrf,datetime.now(timezone.utc)+timedelta(hours=8),ip,request.headers.get('user-agent','')[:512]))
+            audit(cur,user['id'],'login_success',request,{'username':username})
+    # Raise outside transaction so failed-login audit records are committed.
+    if failure:
+        raise HTTPException(401, 'Invalid username or password')
+    response.set_cookie(COOKIE,token,httponly=True,secure=PRODUCTION,samesite='strict',max_age=8*3600,path='/')
+    return {'username':user['username'],'role':user['role'],'csrf':csrf}
 
-# 3. Initialize the FastAPI app
-app = FastAPI(
-    title="CryptoTrace",
-    description="Crypto Fraud Investigation and Blockchain Analytics Platform",
-    version="1.0.0"
-)
+@app.get('/auth/me')
+def me(user=Depends(require_user)):
+    return {k:user[k] for k in ('username','role','csrf')}
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)   
+@app.post('/auth/logout')
+def logout(request: Request, response: Response, user=Depends(require_user)):
+    with db() as cur:
+        cur.execute('DELETE FROM ct_sessions WHERE token_hash=%s',(user['token_hash'],))
+        audit(cur,user['id'],'logout',request)
+    response.delete_cookie(COOKIE,path='/')
+    return {'status':'signed_out'}
 
-# --------------------------------------------------
-# PHASE 7: POSTGRESQL DATABASE STORAGE
-# --------------------------------------------------
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/cryptotrace")
-
-def get_db_connection():
-    """Opens a connection to the PostgreSQL database."""
-    return psycopg2.connect(DATABASE_URL)
-
-def init_db():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    # 1. Cases Table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS cases (
-            case_id TEXT PRIMARY KEY,
-            wallet_address TEXT,
-            blockchain TEXT,
-            fraud_type TEXT,
-            risk_score INTEGER,
-            status TEXT,
-            max_hops INTEGER DEFAULT 2,
-            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-    
-    # 2. Dynamic Entities Table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS known_entities (
-            wallet_address TEXT PRIMARY KEY,
-            name TEXT,
-            is_vasp BOOLEAN,
-            is_mixer BOOLEAN
-        )
-    """)
-    
-    # 3. Comprehensive Global Seed Data (Restored)
-    seed_data = [
-        # Indian Exchanges
-        ("0x27f706edde3ad952ef647dd67e24e38cd0803dd6", "WazirX Hot Wallet", True, False),
-        ("0x301cc9fcfc0a76ec6a2dfb42ec34b6b6ec4210d4", "WazirX Operations", True, False),
-        ("0x3235b2b2915cd67df9adbfcfdc093c063cfbc4fc", "CoinDCX Hot Wallet", True, False),
-        ("0xeb252d6a5c102a0614532a2491a13ce32e18b871", "CoinSwitch Kuber", True, False),
-        
-        # Global EVM Exchanges
-        ("0x3f5ce5fbfe3e9af3971dd833d26ba9b5c936f0be", "Binance Hot Wallet", True, False),
-        ("0x28c6c06298d514db089934071355e5743bf21d60", "Binance 14", True, False),
-        ("0x503828976d22510aad0201ac7ec88293211d23da", "Coinbase 1", True, False),
-        ("0xddfabcdc4d8ffc6d5beaf154f18b778f892a0740", "Coinbase 2", True, False),
-        ("0x267be1c1d68e0e58603612dfbd6b445c71d37803", "Kraken 1", True, False),
-        ("0x6cc5f688a315f3dc28a7781717a9a798a59fda7b", "OKX Hot Wallet", True, False),
-        ("0x2b5634c42055806a59e9107ed44d43c426e58258", "KuCoin Hub", True, False),
-        ("0xf977814e90da44bfa03b6295a0616a897441acec", "Huobi Exchange", True, False),
-        ("0x1dba1131000664b884a1ba238464159892252d3a", "Bybit Hot Wallet", True, False),
-        ("0xcc470bdc7d2fb70094bba8912d8a4369ec23a854", "Upbit Exchange", True, False),
-        
-        # TRON VASPs
-        ("tmua6yqfcex8ehbfyeg5y7s4dqzsjirey9", "Binance Tron Hot Wallet", True, False),
-        ("taun6fwrnwwmaeqycckffc7wymbas6cbix", "Binance Tron 2", True, False),
-        ("thpvauhoh2qn2y9thczml3h815gznamv8s", "Huobi Tron Hot Wallet", True, False),
-        ("tqnh3ptpvmb6o7a2xmxun4vymxeqf215gq", "OKX Tron Hot Wallet", True, False),
-        ("t9yd14nj9j7xab4dbgeix9h8unkkhxuwwb", "Tron Network Black Hole (Burn)", True, False),
-        
-        # BTC VASPs
-        ("34xp4vrocgjym3xr7ycvpfhocnxv4twseo", "Binance Cold Storage (BTC)", True, False),
-        ("bc1qm34lsc65zpx6u344xxy59yq2659p4m773t97p7", "Coinbase Prime (BTC)", True, False),
-        
-        # Mixers
-        ("0x12d66f87a04a9e220743712ce6d9bb1b5616b8fc", "Tornado Cash (Mixer)", False, True),
-        ("0x47ce0c6ed5b0ce3d3a51fdb1c52dc66a7c3c2936", "Tornado Cash 100 ETH", False, True),
-        ("0xd90e2f925da726b50c4ed8d0fb90ad053324f31b", "Tornado Cash 1 ETH", False, True)
-    ]
-    
-    # Force updates the database without resetting your cases
-    cursor.executemany("""
-        INSERT INTO known_entities (wallet_address, name, is_vasp, is_mixer)
-        VALUES (%s, %s, %s, %s)
-        ON CONFLICT (wallet_address) DO UPDATE SET
-            name = EXCLUDED.name,
-            is_vasp = EXCLUDED.is_vasp,
-            is_mixer = EXCLUDED.is_mixer
-    """, seed_data)
-        
-    conn.commit()
-    cursor.close()
-    conn.close()
-
-# Helper function to query the DB during traces
-def get_entity_data(address: str):
-    conn = get_db_connection()
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-    cursor.execute("SELECT * FROM known_entities WHERE wallet_address = %s", (address.lower(),))
-    row = cursor.fetchone()
-    cursor.close()
-    conn.close()
-    return dict(row) if row else {}
-
-
-async def sync_osint_feeds():
-    """Background CRON job that fetches live OFAC sanctions and updates PostgreSQL every 24 hours."""
-    while True:
-        print("\n[OSINT] Initiating daily threat intelligence sync...")
-        try:
-            # Fetching live OFAC sanctioned Ethereum addresses from an open-source tracker
-            url = "https://raw.githubusercontent.com/0xB10C/ofac-sanctioned-digital-currency-addresses/main/sanctioned_addresses_ETH.json"
-            res = requests.get(url, timeout=10)
-            
-            if res.status_code == 200:
-                ofac_addresses = res.json()
-                
-                # Format into PostgreSQL tuples: (address, name, is_vasp, is_mixer)
-                # Setting is_mixer=True ensures the AI assigns a 99/100 Critical Risk score
-                threat_data = [
-                    (addr.lower(), "OFAC Sanctioned Entity", False, True) 
-                    for addr in ofac_addresses
-                ]
-                
-                conn = get_db_connection()
-                cursor = conn.cursor()
-                
-                # Batch insert/update the new addresses directly into the live database
-                cursor.executemany("""
-                    INSERT INTO known_entities (wallet_address, name, is_vasp, is_mixer)
-                    VALUES (%s, %s, %s, %s)
-                    ON CONFLICT (wallet_address) DO UPDATE SET
-                        name = EXCLUDED.name,
-                        is_mixer = EXCLUDED.is_mixer
-                """, threat_data)
-                
-                conn.commit()
-                cursor.close()
-                conn.close()
-                
-                print(f"[OSINT] Successfully ingested {len(threat_data)} live OFAC sanctioned addresses into PostgreSQL.\n")
-            
-        except Exception as e:
-            print(f"[OSINT] Database update failed: {e}\n")
-            
-        # Sleep for 24 hours (86400 seconds) before querying the API again
-        await asyncio.sleep(86400)
-
-
-@app.on_event("startup")
-async def on_startup():
-    init_db()
-    # Fire and forget the background OSINT ingestion script alongside the main server
-    asyncio.create_task(sync_osint_feeds())
+@app.get('/audit')
+def audit_history(user=Depends(require_user), offset: int=0):
+    if offset < 0 or offset > 1000000:
+        raise HTTPException(400,'Invalid offset')
+    with db() as cur:
+        cur.execute('''SELECT a.id,a.action,a.occurred_at,a.ip,a.user_agent,a.detail,u.username FROM ct_audit a
+            LEFT JOIN ct_users u ON u.id=a.user_id WHERE (a.user_id=%s OR %s) ORDER BY a.id DESC LIMIT 100 OFFSET %s''',
+            (user['id'],user['role']=='admin',offset))
+        return cur.fetchall()
 
 class CaseModel(BaseModel):
-    case_id: str
-    wallet_address: str
-    blockchain: str
-    fraud_type: str
-    max_hops: int = 2
+    case_id: str = Field(min_length=1,max_length=80,pattern=r'^[A-Za-z0-9_.-]+$')
+    wallet_address: str = Field(min_length=10,max_length=100)
+    blockchain: Literal['Ethereum','Polygon','BNB Chain','Tron','Bitcoin']
+    fraud_type: str = Field(min_length=1,max_length=120)
+    max_hops: int = Field(default=2,ge=1,le=4)
 
+def checked_address(address, chain):
+    try:
+        return validate_address(address,chain)
+    except ValueError as exc:
+        raise HTTPException(422,str(exc)) from exc
 
-@app.post("/cases")
-def create_case(case: CaseModel):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute(
-        """
-        INSERT INTO cases (case_id, wallet_address, blockchain, fraud_type, risk_score, status, max_hops)
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
-        ON CONFLICT (case_id) DO UPDATE SET
-            wallet_address = EXCLUDED.wallet_address,
-            blockchain = EXCLUDED.blockchain,
-            fraud_type = EXCLUDED.fraud_type,
-            max_hops = EXCLUDED.max_hops
-        """,
-        (case.case_id, case.wallet_address.lower(), case.blockchain, case.fraud_type, 0, "Tracing", case.max_hops)
-    )
-    conn.commit()
-    cursor.close()
-    conn.close()
-    return {"status": "success"}
+@app.post('/cases')
+def create_case(case: CaseModel, request: Request, user=Depends(require_user)):
+    wallet = checked_address(case.wallet_address,case.blockchain)
+    with db() as cur:
+        cur.execute('''INSERT INTO ct_cases(case_id,owner_id,wallet_address,blockchain,fraud_type,max_hops)
+            VALUES (%s,%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING RETURNING case_id''',
+            (case.case_id,user['id'],wallet,case.blockchain,case.fraud_type,case.max_hops))
+        if not cur.fetchone():
+            old = visible_case(cur,case.case_id,user)
+            if (old['wallet_address'],old['blockchain'],old['fraud_type'],old['max_hops']) != (wallet,case.blockchain,case.fraud_type,case.max_hops):
+                raise HTTPException(409,'Case reference already has different parameters. Use a new reference.')
+        audit(cur,user['id'],'case_opened',request,{'case_id':case.case_id})
+    return {'status':'success','case_id':case.case_id}
 
+@app.get('/cases')
+def cases(user=Depends(require_user), offset: int=0):
+    if offset < 0 or offset > 1000000:
+        raise HTTPException(400,'Invalid offset')
+    with db() as cur:
+        cur.execute('SELECT * FROM ct_cases WHERE owner_id=%s OR %s ORDER BY timestamp DESC LIMIT 100 OFFSET %s',
+                    (user['id'],user['role']=='admin',offset))
+        return cur.fetchall()
 
-@app.patch("/cases/{case_id}")
-def update_case_score(case_id: str, risk_score: int):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute(
-        "UPDATE cases SET risk_score = %s, status = 'Completed' WHERE case_id = %s",
-        (risk_score, case_id)
-    )
-    conn.commit()
-    cursor.close()
-    conn.close()
-    return {"status": "updated"}
+class TraceOptions(BaseModel):
+    fan_threshold: int = Field(default=5,ge=2,le=50)
 
-@app.get("/cases")
-def get_cases():
-    conn = get_db_connection()
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-    cursor.execute("SELECT * FROM cases ORDER BY timestamp DESC LIMIT 10")
-    rows = cursor.fetchall()
-    cursor.close()
-    conn.close()
-    return [dict(row) for row in rows]
+@app.post('/cases/{case_id}/trace')
+def run_trace(case_id: str, options: TraceOptions, request: Request, user=Depends(require_user)):
+    # Session advisory lock is released on connection close, including crashes/exceptions.
+    with db() as lock:
+        lock.execute('SELECT pg_try_advisory_lock(hashtext(%s)) AS acquired', ('trace:'+user['id'],))
+        if not lock.fetchone()['acquired']:
+            raise HTTPException(429,'A trace is already running for this investigator')
+        case = visible_case(lock,case_id,user)
+        with db() as cur:
+            audit(cur,user['id'],'trace_started',request,{'case_id':case_id})
+        resolver = AttributionResolver(user['id'])
+        entity_lookup = resolver.lookup
+        try:
+            data = trace_fund_flow(case['wallet_address'],case['max_hops'],options.fan_threshold,case['blockchain'],entity_lookup)
+            data['attribution_diagnostics'] = resolver.diagnostics
+            trace_id = str(uuid.uuid4())
+            data.update(trace_id=trace_id,case_id=case_id,fraud_type=case['fraud_type'],investigator=user['username'])
+            canonical = json.dumps(data,sort_keys=True,separators=(',',':'),ensure_ascii=False)
+            sha = hashlib.sha256(canonical.encode()).hexdigest()
+            with db() as cur:
+                cur.execute('INSERT INTO ct_traces(id,case_id,user_id,payload,sha256) VALUES (%s,%s,%s,%s,%s)',
+                    (trace_id,case_id,user['id'],Json(data),sha))
+                cur.execute('UPDATE ct_cases SET risk_score=%s,status=%s WHERE case_id=%s', (data['risk_score'],data['status'],case_id))
+                audit(cur,user['id'],'trace_saved',request,{'case_id':case_id,'trace_id':trace_id,'sha256':sha,'status':data['status']})
+            return {**data,'evidence_sha256':sha}
+        except Exception:
+            with db() as cur:
+                audit(cur,user['id'],'trace_failed',request,{'case_id':case_id})
+            raise
+
+@app.get('/cases/{case_id}/traces')
+def trace_history(case_id: str,user=Depends(require_user)):
+    with db() as cur:
+        visible_case(cur,case_id,user)
+        cur.execute('SELECT id,created_at,sha256 FROM ct_traces WHERE case_id=%s ORDER BY created_at DESC LIMIT 100',(case_id,))
+        return cur.fetchall()
+
+@app.get('/cases/{case_id}/traces/{trace_id}')
+def saved_trace(case_id: str,trace_id: str,request: Request,user=Depends(require_user)):
+    with db() as cur:
+        visible_case(cur,case_id,user)
+        cur.execute('SELECT payload,sha256 FROM ct_traces WHERE case_id=%s AND id=%s',(case_id,trace_id))
+        row=cur.fetchone()
+        if not row:
+            raise HTTPException(404,'Trace not found')
+        audit(cur,user['id'],'trace_read',request,{'case_id':case_id,'trace_id':trace_id})
+        return {**row['payload'],'evidence_sha256':row['sha256']}
+
+@app.get('/stats')
+def stats(user=Depends(require_user)):
+    with db() as cur:
+        cur.execute('SELECT case_id,risk_score,fraud_type FROM ct_cases WHERE owner_id=%s OR %s',(user['id'],user['role']=='admin'))
+        rows=cur.fetchall()
+        cur.execute('''SELECT COALESCE(SUM((payload->>'node_count')::int),0) AS n FROM
+            (SELECT DISTINCT ON (t.case_id) t.payload FROM ct_traces t JOIN ct_cases c ON c.case_id=t.case_id
+            WHERE c.owner_id=%s OR %s ORDER BY t.case_id,t.created_at DESC) latest''',(user['id'],user['role']=='admin'))
+        wallets=cur.fetchone()['n']
+    distribution={k:{'count':0,'pct':0} for k in ('low','medium','high','critical')}
+    types={}
+    for row in rows:
+        s=row['risk_score']
+        if s is not None:
+            distribution['critical' if s>=80 else 'high' if s>=50 else 'medium' if s>=20 else 'low']['count']+=1
+        types[row['fraud_type']]=types.get(row['fraud_type'],0)+1
+    for entry in distribution.values():
+        entry['pct']=round(entry['count']/len(rows)*100) if rows else 0
+    return dict(active_cases=len(rows),wallets_traced=wallets,high_risk=sum(distribution[k]['count'] for k in ('high','critical')),
+        risk_distribution=distribution,unknown_risk=sum(r['risk_score'] is None for r in rows),
+        typologies=[{'fraud_type':k,'count':v} for k,v in types.items()])
 
 class EntityModel(BaseModel):
-    wallet_address: str
-    name: str
-    is_vasp: bool = False
-    is_mixer: bool = False
-
-@app.post("/entities")
-def add_known_entity(entity: EntityModel):
-    """Instantly categorizes a wallet in the database to prevent false positives/negatives."""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute(
-        """
-        INSERT INTO known_entities (wallet_address, name, is_vasp, is_mixer)
-        VALUES (%s, %s, %s, %s)
-        ON CONFLICT (wallet_address) DO UPDATE SET
-            name = EXCLUDED.name,
-            is_vasp = EXCLUDED.is_vasp,
-            is_mixer = EXCLUDED.is_mixer
-        """,
-        (entity.wallet_address.lower(), entity.name, entity.is_vasp, entity.is_mixer)
-    )
-    conn.commit()
-    cursor.close()
-    conn.close()
-    return {"status": "success", "message": f"{entity.name} added to intelligence database."}
-
-@app.get("/stats")
-def get_dashboard_stats():
-    conn = get_db_connection()
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-    
-    # Total count
-    cursor.execute("SELECT COUNT(*) as total FROM cases")
-    total_cases = cursor.fetchone()["total"] or 0
-    
-    # Risk category counts
-    cursor.execute("""
-        SELECT 
-            COUNT(*) FILTER (WHERE risk_score >= 80) AS critical,
-            COUNT(*) FILTER (WHERE risk_score >= 50 AND risk_score < 80) AS high,
-            COUNT(*) FILTER (WHERE risk_score >= 20 AND risk_score < 50) AS medium,
-            COUNT(*) FILTER (WHERE risk_score < 20) AS low
-        FROM cases
-    """)
-    risk_counts = cursor.fetchone()
-    
-    # Fraud typology counts
-    cursor.execute("""
-        SELECT fraud_type, COUNT(*) as count 
-        FROM cases 
-        GROUP BY fraud_type 
-        ORDER BY count DESC
-    """)
-    typology_rows = cursor.fetchall()
-    
-    cursor.close()
-    conn.close()
-    
-    # Calculate percentages
-    def pct(val):
-        return round((val / total_cases * 100)) if total_cases > 0 else 0
-
-    risk_distribution = {
-        "critical": {"count": risk_counts["critical"], "pct": pct(risk_counts["critical"])},
-        "high": {"count": risk_counts["high"], "pct": pct(risk_counts["high"])},
-        "medium": {"count": risk_counts["medium"], "pct": pct(risk_counts["medium"])},
-        "low": {"count": risk_counts["low"], "pct": pct(risk_counts["low"])},
-    }
-
-    return {
-        "active_cases": total_cases,
-        "high_risk": risk_counts["critical"] + risk_counts["high"],
-        "wallets_traced": total_cases * 15,
-        "risk_distribution": risk_distribution,
-        "typologies": [dict(r) for r in typology_rows]
-    }
-
-# --------------------------------------------------
-# STANDARD ROUTES & ALCHEMY INTEGRATION
-# --------------------------------------------------
-@app.get("/")
-def home():
-    return {"message": "CryptoTrace API is running", "status": "success"}
-
-@app.get("/health")
-def health_check():
-    return {"status": "healthy"}
-
-
-
-FAN_THRESHOLD_DEFAULT = 5      
-MAX_PAGES_PER_WALLET = 3       
-HARD_MAX_HOPS = 4              
-DEEP_MAX_HOPS = 6              
-MAX_WALLETS_PER_HOP = 25       
-MAX_TOTAL_WALLETS_DEEP = 500   
-REQUEST_TIMEOUT_SECONDS = 15
-
-# ==========================================
-# UNIVERSAL BLOCKCHAIN ADAPTERS
-# ==========================================
-def get_transfers(wallet, direction, blockchain="Ethereum"):
-    """Routes the request to the correct native blockchain API and standardizes the output."""
-    chain = blockchain.lower()
-    
-    if chain in ["ethereum", "polygon", "bnb chain"]:
-        return fetch_evm_transfers(wallet, direction, chain)
-    elif chain == "bitcoin":
-        return fetch_bitcoin_transfers(wallet, direction)
-    elif chain == "tron":
-        return fetch_tron_transfers(wallet, direction)
-    else:
-        return []
-
-def fetch_evm_transfers(wallet, direction, chain_lower):
-    """Fetches EVM data using Alchemy"""
-    api_key = os.getenv("ALCHEMY_API_KEY")
-    if not api_key: return []
-
-    # Dynamically route Alchemy endpoints based on EVM chain
-    base = "eth-mainnet.g.alchemy.com/v2/"
-    if chain_lower == "polygon": base = "polygon-mainnet.g.alchemy.com/v2/"
-    elif chain_lower == "bnb chain": base = "bnb-mainnet.g.alchemy.com/v2/"
-        
-    url = f"https://{base}{api_key}"
-    all_transfers = []
-    
-    params = {
-        "fromBlock": "0x0", "toBlock": "latest",
-        "category": ["external", "internal", "erc20"],
-        "withMetadata": True, "excludeZeroValue": True, "maxCount": "0x32"
-    }
-    if direction == "incoming": params["toAddress"] = wallet
-    else: params["fromAddress"] = wallet
-
-    payload = {"jsonrpc": "2.0", "id": 1, "method": "alchemy_getAssetTransfers", "params": [params]}
-    
-    try:
-        res = requests.post(url, json=payload, timeout=10)
-        if res.status_code == 200:
-            all_transfers.extend(res.json().get("result", {}).get("transfers", []))
-    except Exception:
-        pass
-        
-    return all_transfers
-
-def fetch_bitcoin_transfers(wallet, direction):
-    """Fetches UTXO data using the open-source Mempool.space API (No API Key Required)"""
-    transfers = []
-    try:
-        res = requests.get(f"https://mempool.space/api/address/{wallet}/txs", timeout=10)
-        if res.status_code == 200:
-            for tx in res.json():
-                tx_hash = tx.get("txid")
-                timestamp = None
-                if tx.get("status", {}).get("block_time"):
-                    timestamp = datetime.utcfromtimestamp(tx["status"]["block_time"]).isoformat() + "Z"
-                
-                if direction == "incoming":
-                    from_addr = tx.get("vin", [{}])[0].get("prevout", {}).get("scriptpubkey_address", "Unknown_BTC_Input")
-                    for vout in tx.get("vout", []):
-                        if vout.get("scriptpubkey_address") == wallet:
-                            amt_btc = vout.get("value", 0) / 10**8
-                            transfers.append({"hash": tx_hash, "from": from_addr, "to": wallet, "value": str(amt_btc), "asset": "BTC", "metadata": {"blockTimestamp": timestamp}})
-                else:
-                    is_sender = any(vin.get("prevout", {}).get("scriptpubkey_address") == wallet for vin in tx.get("vin", []))
-                    if is_sender:
-                        for vout in tx.get("vout", []):
-                            to_addr = vout.get("scriptpubkey_address")
-                            if to_addr and to_addr != wallet:
-                                amt_btc = vout.get("value", 0) / 10**8
-                                transfers.append({"hash": tx_hash, "from": wallet, "to": to_addr, "value": str(amt_btc), "asset": "BTC", "metadata": {"blockTimestamp": timestamp}})
-    except Exception as e:
-        print(f"BTC Fallback: {e}")
-    return transfers
-
-def fetch_tron_transfers(wallet, direction):
-    """Fetches BOTH Native TRX and TRC-20 tokens using TronScan API with Cloudflare bypass"""
-    transfers = []
-    wallet = wallet.strip()
-    
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "application/json"
-    }
-    
-    try:
-        # 1. Fetch TRC-20 Token Transfers (USDT)
-        trc20_url = f"https://apilist.tronscanapi.com/api/token_trc20/transfers?limit=50&start=0&relatedAddress={wallet}"
-        res_trc20 = requests.get(trc20_url, headers=headers, timeout=10)
-        
-        if res_trc20.status_code == 200:
-            for tx in res_trc20.json().get("token_transfers", []):
-                from_addr = tx.get("from_address", "")
-                to_addr = tx.get("to_address", "")
-                
-                if direction == "incoming" and to_addr != wallet: continue
-                if direction == "outgoing" and from_addr != wallet: continue
-                    
-                ts_ms = tx.get("block_ts")
-                timestamp = datetime.utcfromtimestamp(ts_ms / 1000.0).isoformat() + "Z" if ts_ms else None
-                
-                token_info = tx.get("tokenInfo") or {}
-                decimals = int(token_info.get("tokenDecimal") or 6)
-                symbol = token_info.get("tokenAbbr", "TRC20").upper()
-                
-                raw_amt = float(tx.get("quant", 0))
-                amt = raw_amt / (10 ** decimals) if decimals else raw_amt
-                
-                # Exclude zero-value spam TRC-20 transfers
-                if amt > 0:
-                    transfers.append({
-                        "hash": tx.get("transaction_id"), "from": from_addr, "to": to_addr, 
-                        "value": str(amt), "asset": symbol, "metadata": {"blockTimestamp": timestamp}
-                    })
-
-        # 2. Fetch Native TRX Transfers
-        trx_url = f"https://apilist.tronscanapi.com/api/transfer?sort=-timestamp&count=true&limit=50&start=0&address={wallet}"
-        res_trx = requests.get(trx_url, headers=headers, timeout=10)
-        
-        if res_trx.status_code == 200:
-            for tx in res_trx.json().get("data", []):
-                from_addr = tx.get("transferFromAddress", "")
-                to_addr = tx.get("transferToAddress", "")
-                
-                if direction == "incoming" and to_addr != wallet: continue
-                if direction == "outgoing" and from_addr != wallet: continue
-                    
-                ts_ms = tx.get("timestamp")
-                timestamp = datetime.utcfromtimestamp(ts_ms / 1000.0).isoformat() + "Z" if ts_ms else None
-                
-                token_info = tx.get("tokenInfo") or {}
-                decimals = int(token_info.get("tokenDecimal") or 0)
-                symbol = token_info.get("tokenAbbr", "TRX").upper()
-                
-                raw_amt = float(tx.get("amount_str", tx.get("amount", 0)))
-                amt = raw_amt / (10 ** decimals) if decimals else raw_amt
-                
-                # Exclude zero-value spam TRX transfers
-                if amt > 0:
-                    transfers.append({
-                        "hash": tx.get("transactionHash"), "from": from_addr, "to": to_addr, 
-                        "value": str(amt), "asset": symbol, "metadata": {"blockTimestamp": timestamp}
-                    })
-                
-    except Exception as e:
-        print(f"Tron Unified API Fallback Error: {e}")
-        
-    return transfers
-
-def to_decimal(value):
-    try:
-        return Decimal(str(value))
-    except (InvalidOperation, TypeError):
-        return None
-
-def compute_fan_metrics(node_id, outgoing_transfers, incoming_transfers, threshold):
-    out_recipients = set()
-    for t in outgoing_transfers:
-        frm = t.get("from") or ""
-        to = t.get("to") or ""
-        if frm == node_id and to and to != node_id:
-            out_recipients.add(to)
-
-    in_senders = set()
-    for t in incoming_transfers:
-        frm = t.get("from") or ""
-        to = t.get("to") or ""
-        if to == node_id and frm and frm != node_id:
-            in_senders.add(frm)
-
-    flags = []
-    if len(out_recipients) >= threshold:
-        flags.append("high_fan_out")
-    if len(in_senders) >= threshold:
-        flags.append("high_fan_in")
-
-    return len(out_recipients), len(in_senders), flags
-
-
-def trace_fund_flow(address, max_hops, wallet_cap=None, max_total_wallets=None, fan_threshold=FAN_THRESHOLD_DEFAULT, blockchain="Ethereum"):    
-    address = address.strip()
-    # 1. ONLY lowercase the origin address if it's an EVM chain
-    
-    is_evm = blockchain.lower() in ["ethereum", "polygon", "bnb chain"]
-    if is_evm:
-        address = address.lower()
-
-    graph = nx.MultiDiGraph()
-    
-    # Check if the starting address itself is a known VASP/exchange in PostgreSQL
-    root_entity = get_entity_data(address)
-    is_root_vasp = root_entity.get("is_vasp", False)
-    root_name = root_entity.get("name", "Reported Suspect")
-    
-    # Add the root node with dynamic VASP attribution
-    graph.add_node(
-        address, 
-        type="exchange" if is_root_vasp else "reported_wallet",
-        entity_name=root_name if is_root_vasp else "Reported Suspect",
-        risk_score=0 if is_root_vasp else 50,
-        hop=0,
-        risk_reasons=["Safe: Known Exchange"] if is_root_vasp else ["Involved in fund flow"]
-    )
-
-    first_hop_transfers = []
-    first_hop_transfers.extend(get_transfers(address, "incoming", blockchain))
-    first_hop_transfers.extend(get_transfers(address, "outgoing", blockchain))
-
-    current_hop_funds = {}
-    current_hop_wallets = set()
-
-    for transfer in first_hop_transfers:
-        from_address = transfer.get("from") or ""
-        to_address = transfer.get("to") or ""
-        
-        # Respect case-sensitivity based on the network
-        if is_evm:
-            from_address = from_address.lower()
-            to_address = to_address.lower()
-            
-        if not from_address or not to_address:
-            continue
-
-        asset = transfer.get("asset")
-        amount = transfer.get("value")
-        metadata = transfer.get("metadata", {})
-        timestamp = metadata.get("blockTimestamp")
-
-        # Fetch from PostgreSQL instead of static dictionary
-        from_entity = get_entity_data(from_address)
-        to_entity = get_entity_data(to_address)
-
-
-        graph.add_node(from_address, type="exchange" if from_entity.get("is_vasp") else "wallet", hop=1, entity_name=from_entity.get("name"))
-        graph.add_node(to_address, type="exchange" if to_entity.get("is_vasp") else "wallet", hop=1, entity_name=to_entity.get("name"))
-        graph.add_edge(from_address, to_address, tx_hash=transfer.get("hash"), asset=asset, amount=amount, timestamp=timestamp, hop=1)
-
-        if from_address == address:
-            current_hop_wallets.add(to_address)
-            if to_address not in current_hop_funds:
-                current_hop_funds[to_address] = []
-            current_hop_funds[to_address].append({"asset": asset, "amount": amount, "timestamp": timestamp, "tx_hash": transfer.get("hash")})
-
-    fan_out, fan_in, flags = compute_fan_metrics(address, first_hop_transfers, first_hop_transfers, fan_threshold)
-    graph.nodes[address]["fan_out_count"] = fan_out
-    graph.nodes[address]["fan_in_count"] = fan_in
-    graph.nodes[address]["flags"] = flags
-
-    hop_level = 2
-    truncated_wallets = []
-    visited_wallets = set()   
-    total_wallets_expanded = 0
-
-    while hop_level <= max_hops and current_hop_wallets:
-        current_hop_wallets = {w for w in current_hop_wallets if w not in visited_wallets}
-
-        if wallet_cap and len(current_hop_wallets) > wallet_cap:
-            def total_received(wallet):
-                return sum((to_decimal(f["amount"]) or Decimal(0)) for f in current_hop_funds.get(wallet, []))
-            ranked_wallets = sorted(current_hop_wallets, key=total_received, reverse=True)
-            current_hop_wallets = set(ranked_wallets[:wallet_cap])
-            for wallet in ranked_wallets[wallet_cap:]:
-                truncated_wallets.append({"wallet": wallet, "hop": hop_level, "reason": "per_hop_limit"})
-
-        next_hop_funds = {}
-        next_hop_wallets = set()
-
-        for wallet in current_hop_wallets:
-            if max_total_wallets and total_wallets_expanded >= max_total_wallets:
-                truncated_wallets.append({"wallet": wallet, "hop": hop_level, "reason": "overall_limit"})
-                continue
-
-            visited_wallets.add(wallet)
-            total_wallets_expanded += 1
-            received_funds = current_hop_funds.get(wallet, [])
-            if not received_funds:
-                continue
-
-            # MASSIVE BUG FIX: Uses 'wallet' here instead of 'address'
-            transfers = get_transfers(wallet, "outgoing", blockchain)
-            incoming_transfers = get_transfers(wallet, "incoming", blockchain)
-
-            fan_out, fan_in, flags = compute_fan_metrics(wallet, transfers, incoming_transfers, fan_threshold)
-            if wallet in graph.nodes:
-                graph.nodes[wallet]["fan_out_count"] = fan_out
-                graph.nodes[wallet]["fan_in_count"] = fan_in
-                graph.nodes[wallet]["flags"] = flags
-
-            for transfer in transfers:
-                from_address = transfer.get("from") or ""
-                to_address = transfer.get("to") or ""
-
-                if is_evm:
-                    from_address = from_address.lower()
-                    to_address = to_address.lower()
-
-                if from_address != wallet or to_address == wallet:
-                    continue
-
-                asset = transfer.get("asset")
-                amount = transfer.get("value")
-                timestamp = transfer.get("metadata", {}).get("blockTimestamp")
-                sent_amount = to_decimal(amount)
-
-                if sent_amount is None or sent_amount <= 0:
-                    continue
-
-                possible_continuation = False
-                flow_strength = None
-                time_delta_seconds = None
-
-                for received in received_funds:
-                    if received.get("asset") != asset:
-                        continue
-
-                    if received.get("timestamp") and timestamp:
-                        try:
-                            received_time = datetime.fromisoformat(received.get("timestamp").replace("Z", "+00:00"))
-                            sent_time = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
-                            if sent_time > received_time:
-                                time_delta_seconds = (sent_time - received_time).total_seconds()
-                        except ValueError:
-                            pass
-
-                    received_amount = to_decimal(received.get("amount"))
-                    if received_amount and received_amount > 0:
-                        amount_ratio = sent_amount / received_amount
-                        if Decimal("0.80") <= amount_ratio <= Decimal("1.20"):
-                            flow_strength = "strong"
-                            possible_continuation = True
-                            break
-                        elif Decimal("0.20") <= amount_ratio < Decimal("0.80"):
-                            flow_strength = "possible"
-                            possible_continuation = True
-                            break
-
-                if not possible_continuation:
-                    continue
-
-                is_rapid = time_delta_seconds is not None and time_delta_seconds < 86400
-                to_entity = get_entity_data(to_address)  
-                              
-                graph.add_node(to_address, type="exchange" if to_entity.get("is_vasp") else "wallet", hop=hop_level, entity_name=to_entity.get("name"))
-                graph.add_edge(from_address, to_address, tx_hash=transfer.get("hash"), asset=asset, amount=amount, timestamp=timestamp, hop=hop_level, fund_flow_continuation=True, flow_strength=flow_strength, rapid_movement=is_rapid, turnaround_seconds=time_delta_seconds)
-                
-                next_hop_wallets.add(to_address)
-                if to_address not in next_hop_funds:
-                    next_hop_funds[to_address] = []
-                next_hop_funds[to_address].append({"asset": asset, "amount": amount, "timestamp": timestamp, "tx_hash": transfer.get("hash")})
-
-        current_hop_wallets = next_hop_wallets
-        current_hop_funds = next_hop_funds
-        hop_level += 1
-
-    try:
-        hop_distances = nx.single_source_shortest_path_length(graph, address)
-        for node in graph.nodes():
-            if node in hop_distances:
-                graph.nodes[node]["hop"] = hop_distances[node]
-    except nx.NetworkXError:
-        graph.nodes[address]["hop"] = 0
-
-    # Preserve VASP status if the origin address itself is a known exchange
-    root_entity = get_entity_data(address)
-    is_root_vasp = root_entity.get("is_vasp", False)
-    
-    graph.nodes[address]["type"] = "exchange" if is_root_vasp else "reported_wallet"
-    graph.nodes[address]["hop"] = 0
-    # --------------------------------------------------
-    # ML ANOMALY DETECTION & EXPLAINABLE RISK
-    # --------------------------------------------------
-    ml_anomalies = set()
-    node_order = list(graph.nodes())
-    node_features = [[graph.nodes[n].get("fan_in_count", 0), graph.nodes[n].get("fan_out_count", 0)] for n in node_order]
-        
-    if len(node_features) > 10:
-        model = IsolationForest(contamination=0.05, random_state=42)
-        predictions = model.fit_predict(node_features)
-        for i, pred in enumerate(predictions):
-            if pred == -1:
-                ml_anomalies.add(node_order[i])
-
-    for node_id in graph.nodes():
-        score = 0
-        reasons = []
-        node_data = graph.nodes[node_id]
-        
-        # Fetch from PostgreSQL for accurate risk assessment
-        entity = get_entity_data(node_id)
-
-        if entity.get("is_mixer"):
-            score = 99
-            reasons.append("Critical: Known Mixer/Sanctioned Entity")
-        elif entity.get("is_vasp"):
-            score = 0
-            reasons.append("Safe: Known Exchange")
-        elif node_data.get("type") == "reported_wallet":
-            score = 0
-            reasons.append("Reported Wallet")
-        else:
-            score += 10
-            reasons.append("Involved in fund flow")
-            flags = node_data.get("flags", [])
-            
-            if "high_fan_in" in flags:
-                score += 25
-                reasons.append("High Fan-In (Potential Consolidation)")
-            if "high_fan_out" in flags:
-                score += 25
-                reasons.append("High Fan-Out (Potential Layering)")
-
-            has_rapid = any(d.get("rapid_movement") for _, _, d in graph.in_edges(node_id, data=True)) or \
-                        any(d.get("rapid_movement") for _, _, d in graph.out_edges(node_id, data=True))
-            if has_rapid:
-                score += 30
-                reasons.append("Rapid Movement (Under 24h turnaround)")
-
-            total_in = sum(to_decimal(d.get("amount", 0)) or Decimal(0) for _, _, d in graph.in_edges(node_id, data=True))
-            total_out = sum(to_decimal(d.get("amount", 0)) or Decimal(0) for _, _, d in graph.out_edges(node_id, data=True))
-            
-            if total_in > 0 and total_out > 0:
-                retention_ratio = (total_in - total_out) / total_in
-                if retention_ratio < Decimal("0.05") and has_rapid:
-                    score += 20
-                    reasons.append("Pass-Through Wallet")
-                    
-            has_round_amounts = False
-            for _, _, data in graph.out_edges(node_id, data=True):
-                amt = to_decimal(data.get("amount", 0))
-                if amt and amt > 0 and amt % 1 == 0:  
-                    has_round_amounts = True
-                    break
-            
-            if has_round_amounts:
-                score += 15
-                reasons.append("Round Amount Structuring")
-
-            out_edges = list(graph.out_edges(node_id, data=True))
-            if len(out_edges) == 2:
-                total_out_peel = sum((to_decimal(e[2].get("amount", 0)) or Decimal(0)) for e in out_edges)
-                if total_out_peel > 0:
-                    ratios = [(to_decimal(e[2].get("amount", 0)) or Decimal(0)) / total_out_peel for e in out_edges]
-                    if any(r >= Decimal("0.85") for r in ratios) and any(r <= Decimal("0.15") for r in ratios):
-                        score += 25
-                        reasons.append("Peeling Chain Activity")
-
-            if node_id in ml_anomalies:
-                score += 20
-                reasons.append("AI Detection: Unusual Transaction Pattern")
-
-        graph.nodes[node_id]["risk_score"] = min(score, 100)
-        graph.nodes[node_id]["risk_reasons"] = reasons
-
-    return {
-        "wallet_address": address,
-        "max_hops": max_hops,
-        "node_count": graph.number_of_nodes(),
-        "edge_count": graph.number_of_edges(),
-        "truncated_wallets": truncated_wallets,
-        "nodes": [{"id": n, **attr} for n, attr in graph.nodes(data=True)],
-        "edges": [{"from": s, "to": t, **attr} for s, t, _, attr in graph.edges(data=True, keys=True)]
-    }
-
-@app.get("/wallet/{address}/graph")
-def get_wallet_graph(address: str, max_hops: int = 2, fan_threshold: int = FAN_THRESHOLD_DEFAULT, blockchain: str = "Ethereum"):
-    # (Optional: You can remove the Web3.is_address check here since Bitcoin/Tron addresses aren't valid Web3 addresses)
-    if max_hops < 1 or max_hops > HARD_MAX_HOPS:
-        raise HTTPException(status_code=400, detail=f"max_hops must be between 1 and {HARD_MAX_HOPS}")
-    return trace_fund_flow(address, max_hops, wallet_cap=MAX_WALLETS_PER_HOP, fan_threshold=fan_threshold, blockchain=blockchain)
+    blockchain: Literal['Ethereum','Polygon','BNB Chain','Tron','Bitcoin']
+    wallet_address: str = Field(max_length=100)
+    name: str = Field(min_length=1,max_length=120)
+    source: str = Field(min_length=5,max_length=500)
+    is_vasp: bool=False
+    is_mixer: bool=False
+    is_sanctioned: bool=False
+
+@app.get('/entities')
+def list_entities(q: str='', offset: int=0, user=Depends(require_user)):
+    if len(q) > 200 or not 0 <= offset <= 1000000:
+        raise HTTPException(400, 'Invalid entity search')
+    with db() as cur:
+        term = '%'+q+'%'
+        cur.execute('SELECT blockchain,wallet_address,name,source,is_vasp,is_mixer,is_sanctioned,updated_at FROM ct_entities WHERE name ILIKE %s OR wallet_address ILIKE %s OR blockchain ILIKE %s ORDER BY blockchain,name,wallet_address LIMIT 100 OFFSET %s', (term,term,term,offset))
+        return cur.fetchall()
+
+@app.post('/entities')
+def add_entity(body: EntityModel,request: Request,user=Depends(require_admin)):
+    wallet=checked_address(body.wallet_address,body.blockchain)
+    with db() as cur:
+        cur.execute('''INSERT INTO ct_entities(blockchain,wallet_address,name,source,is_vasp,is_mixer,is_sanctioned,updated_by)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT(blockchain,wallet_address) DO UPDATE SET
+            name=EXCLUDED.name,source=EXCLUDED.source,is_vasp=EXCLUDED.is_vasp,is_mixer=EXCLUDED.is_mixer,
+            is_sanctioned=EXCLUDED.is_sanctioned,updated_by=EXCLUDED.updated_by,updated_at=now()''',
+            (body.blockchain,wallet,body.name,body.source,body.is_vasp,body.is_mixer,body.is_sanctioned,user['id']))
+        audit(cur,user['id'],'entity_updated',request,body.model_dump())
+    return {'status':'saved'}
+
+@app.get('/attribution/status')
+def attribution_status(user=Depends(require_user)):
+    return source_status()
+
+@app.get('/attribution/cached')
+def cached_attributions(user=Depends(require_user)):
+    with db() as cur:
+        cur.execute("SELECT blockchain,wallet_address,payload,status,checked_at,expires_at FROM ct_online_entities WHERE status IN ('matched','conflict') ORDER BY checked_at DESC LIMIT 100")
+        return cur.fetchall()
+
+@app.post('/attribution/refresh')
+def refresh_attributions(request: Request,user=Depends(require_admin)):
+    result = refresh_sources(force=True)
+    with db() as cur:
+        audit(cur,user['id'],'attribution_sources_refreshed',request,result)
+    return result
+
+@app.get('/health')
+def health(user=Depends(require_user)):
+    with db() as cur:
+        cur.execute('SELECT 1')
+    return {'database':'connected','providers':{name:'configured; not live-tested' if os.getenv(key) else 'not configured'
+        for name,key in [('Alchemy','ALCHEMY_API_KEY'),('BNB / NodeReal','NODEREAL_API_KEY'),('TronScan','TRONSCAN_API_KEY')]}}
+
+# Serve an explicit public asset allowlist. Never expose .env, source or database files.
+@app.get('/')
+def index():
+    return FileResponse(ROOT/'index.html')
+
+@app.get('/assets/{filename}')
+def vendor_asset(filename: str):
+    if filename not in ('vis-network.min.js','jspdf.umd.min.js','jspdf.plugin.autotable.min.js','fontawesome.min.css','fa-solid-900.woff2','fa-regular-400.woff2','report-regular.ttf','report-bold.ttf') or not (ROOT/'assets'/filename).is_file():
+        raise HTTPException(404,'Asset unavailable; run the vendor setup command')
+    return FileResponse(ROOT/'assets'/filename)
+
+@app.get('/{filename}')
+def static_file(filename: str):
+    if filename not in ('style.css','script.js','events.js','graph-ui.js','reports.js'):
+        raise HTTPException(404,'Not found')
+    return FileResponse(ROOT/filename)

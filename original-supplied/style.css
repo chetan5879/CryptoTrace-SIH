@@ -1,0 +1,3360 @@
+/* =========================================================
+   CRYPTOTRACE — BLOCKCHAIN AI INTELLIGENCE THEME
+========================================================= */
+
+:root {
+    /* ===============================
+       CRYPTOTRACE LIGHT BLUE THEME
+    =============================== */
+
+    --bg: #eef7fc;
+    --bg-secondary: #e3f2fa;
+
+    --sidebar: #062b49;
+    --sidebar-dark: #041f36;
+
+    --card: #ffffff;
+    --card-hover: #f4faff;
+
+    --border: #cfe4f0;
+
+    --text: #12344d;
+    --text-dark: #08263d;
+    --muted: #6d8799;
+
+    --primary: #0879c9;
+    --primary-dark: #05558f;
+    --primary-light: #38a9e8;
+
+    --cyan: #0794d2;
+    --blue: #1565c0;
+
+    --purple: #536dfe;
+    --green: #0b9b72;
+    --yellow: #d99b00;
+    --orange: #e87516;
+    --red: #d9364f;
+
+    --radius: 10px;
+}
+
+
+/* =========================================================
+   RESET
+========================================================= */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: Inter, Arial, Helvetica, sans-serif;
+
+    background:
+        radial-gradient(
+            circle at 10% 10%,
+            rgba(56, 169, 232, 0.12),
+            transparent 30%
+        ),
+        radial-gradient(
+            circle at 90% 85%,
+            rgba(8, 121, 201, 0.08),
+            transparent 30%
+        ),
+        #eef7fc;
+
+    color: var(--text);
+
+    min-height: 100vh;
+
+    overflow-x: hidden;
+}
+
+button,
+input,
+select {
+    font-family: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+
+/* =========================================================
+   BLOCKCHAIN + AI BACKGROUND
+========================================================= */
+
+.ai-background {
+    position: fixed;
+    inset: 0;
+
+    width: 100%;
+    height: 100%;
+
+    pointer-events: none;
+
+    z-index: -10;
+
+    overflow: hidden;
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(238, 247, 252, 0.96),
+            rgba(220, 239, 249, 0.96)
+        );
+}
+
+
+/* ---------------------------------------------------------
+   BLOCKCHAIN GRID
+--------------------------------------------------------- */
+
+.ai-grid {
+    position: absolute;
+    inset: 0;
+
+    width: 100%;
+    height: 100%;
+
+    opacity: 0.55;
+
+    background-image:
+        linear-gradient(
+            rgba(8, 121, 201, 0.08) 1px,
+            transparent 1px
+        ),
+        linear-gradient(
+            90deg,
+            rgba(8, 121, 201, 0.08) 1px,
+            transparent 1px
+        );
+
+    background-size: 70px 70px;
+
+    transform:
+        perspective(900px)
+        rotateX(58deg)
+        scale(1.5);
+
+    transform-origin: center bottom;
+}
+
+/* ---------------------------------------------------------
+   BLOCKCHAIN NODES
+--------------------------------------------------------- */
+
+.ai-background::before {
+
+    content: "";
+
+    position: absolute;
+
+    inset: 0;
+
+    width: 100%;
+    height: 100%;
+
+    background-image:
+
+        radial-gradient(
+            circle at 12% 22%,
+            rgba(34, 211, 238, 0.65) 0,
+            rgba(34, 211, 238, 0.65) 2px,
+            transparent 3px
+        ),
+
+        radial-gradient(
+            circle at 28% 48%,
+            rgba(59, 130, 246, 0.5) 0,
+            rgba(59, 130, 246, 0.5) 2px,
+            transparent 3px
+        ),
+
+        radial-gradient(
+            circle at 43% 20%,
+            rgba(16, 185, 129, 0.55) 0,
+            rgba(16, 185, 129, 0.55) 2px,
+            transparent 3px
+        ),
+
+        radial-gradient(
+            circle at 57% 62%,
+            rgba(34, 211, 238, 0.55) 0,
+            rgba(34, 211, 238, 0.55) 2px,
+            transparent 3px
+        ),
+
+        radial-gradient(
+            circle at 72% 35%,
+            rgba(59, 130, 246, 0.55) 0,
+            rgba(59, 130, 246, 0.55) 2px,
+            transparent 3px
+        ),
+
+        radial-gradient(
+            circle at 87% 68%,
+            rgba(16, 185, 129, 0.55) 0,
+            rgba(16, 185, 129, 0.55) 2px,
+            transparent 3px
+        );
+
+    background-size: 100% 100%;
+
+    opacity: 0.6;
+
+    filter: drop-shadow(
+        0 0 8px rgba(34, 211, 238, 0.15)
+    );
+}
+
+
+/* ---------------------------------------------------------
+   BLOCKCHAIN CONNECTIONS
+--------------------------------------------------------- */
+
+.ai-background::before {
+    content: "";
+
+    position: absolute;
+    inset: 0;
+
+    background-image:
+
+        radial-gradient(
+            circle at 12% 22%,
+            rgba(8, 121, 201, 0.55) 0,
+            rgba(8, 121, 201, 0.55) 3px,
+            transparent 4px
+        ),
+
+        radial-gradient(
+            circle at 28% 48%,
+            rgba(21, 101, 192, 0.45) 0,
+            rgba(21, 101, 192, 0.45) 3px,
+            transparent 4px
+        ),
+
+        radial-gradient(
+            circle at 43% 20%,
+            rgba(56, 169, 232, 0.55) 0,
+            rgba(56, 169, 232, 0.55) 3px,
+            transparent 4px
+        ),
+
+        radial-gradient(
+            circle at 57% 62%,
+            rgba(8, 121, 201, 0.5) 0,
+            rgba(8, 121, 201, 0.5) 3px,
+            transparent 4px
+        ),
+
+        radial-gradient(
+            circle at 72% 35%,
+            rgba(21, 101, 192, 0.5) 0,
+            rgba(21, 101, 192, 0.5) 3px,
+            transparent 4px
+        ),
+
+        radial-gradient(
+            circle at 87% 68%,
+            rgba(56, 169, 232, 0.5) 0,
+            rgba(56, 169, 232, 0.5) 3px,
+            transparent 4px
+        );
+
+    opacity: 0.65;
+
+    animation:
+        blockchainPulse 5s ease-in-out infinite;
+}
+
+/* =========================================================
+   AI GLOW
+========================================================= */
+
+.ai-glow {
+
+    position: absolute;
+
+    width: 420px;
+    height: 420px;
+
+    border-radius: 50%;
+
+    filter: blur(100px);
+
+    opacity: 0.08;
+}
+
+.ai-glow.one {
+
+    left: -160px;
+
+    top: -140px;
+
+    background: #2196f3;
+}
+
+.ai-glow.two {
+
+    right: -150px;
+
+    bottom: -150px;
+
+    background: #10b981;
+}
+
+
+/* =========================================================
+   APPLICATION
+========================================================= */
+
+.app {
+
+    display: flex;
+
+    min-height: 100vh;
+
+    position: relative;
+
+    z-index: 1;
+}
+
+
+/* =========================================================
+   SIDEBAR
+========================================================= */
+
+.sidebar {
+    width: 235px;
+
+    min-height: 100vh;
+
+    position: fixed;
+
+    left: 0;
+    top: 0;
+
+    display: flex;
+
+    flex-direction: column;
+
+    background:
+        linear-gradient(
+            180deg,
+            #062f50,
+            #041f36
+        );
+
+    border-right: 1px solid #0c486e;
+
+    box-shadow:
+        4px 0 20px rgba(4, 31, 54, 0.12);
+
+    z-index: 100;
+}
+
+
+/* =========================================================
+   LOGO
+========================================================= */
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    padding: 22px 18px;
+
+    border-bottom:
+        1px solid
+        rgba(255, 255, 255, 0.10);
+}
+
+.logo-box {
+    width: 35px;
+    height: 35px;
+
+    display: grid;
+    place-items: center;
+
+    border-radius: 8px;
+
+    color: #ffffff;
+
+    background:
+        linear-gradient(
+            135deg,
+            #0b82c9,
+            #155ca8
+        );
+
+    border: 1px solid rgba(255,255,255,0.18);
+
+    box-shadow:
+        0 5px 15px
+        rgba(0, 0, 0, 0.15);
+}
+
+.logo h2 {
+    font-size: 15px;
+    letter-spacing: 1px;
+
+    color: #ffffff;
+}
+
+.logo small {
+    display: block;
+
+    margin-top: 2px;
+
+    color: #9fc8df;
+
+    font-size: 8px;
+}
+
+
+/* =========================================================
+   MENU
+========================================================= */
+
+.menu-section {
+
+    padding: 20px 12px;
+}
+
+.menu-title {
+    padding: 0 10px;
+
+    margin-bottom: 8px;
+
+    color: #83abc2;
+
+    font-size: 8px;
+
+    font-weight: 700;
+
+    letter-spacing: 1.5px;
+}
+
+.menu-item {
+    width: 100%;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 11px;
+
+    padding: 10px 11px;
+
+    margin-bottom: 3px;
+
+    border: 1px solid transparent;
+
+    border-radius: 7px;
+
+    background: transparent;
+
+    color: #a9c5d5;
+
+    text-align: left;
+
+    font-size: 10px;
+
+    transition: 0.2s;
+}
+
+.menu-item:hover {
+    color: #ffffff;
+
+    background:
+        rgba(255, 255, 255, 0.07);
+}
+
+.menu-item.active {
+    color: #ffffff;
+
+    background:
+        linear-gradient(
+            90deg,
+            #0b5f91,
+            #08466e
+        );
+
+    border-color:
+        rgba(255,255,255,0.10);
+
+    box-shadow:
+        inset 3px 0 0 #4dc3f5;
+}
+
+.notification {
+
+    margin-left: auto;
+
+    min-width: 17px;
+    height: 17px;
+
+    display: grid;
+
+    place-items: center;
+
+    border-radius: 50%;
+
+    background:
+        rgba(255, 77, 103, 0.12);
+
+    color: #ff7083;
+
+    font-size: 7px;
+}
+
+
+/* =========================================================
+   SIDEBAR BOTTOM
+========================================================= */
+
+.sidebar-bottom {
+
+    margin-top: auto;
+
+    padding: 15px;
+
+    border-top:
+        1px solid
+        rgba(255, 255, 255, 0.045);
+}
+
+.system-status {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 9px;
+
+    padding: 10px;
+
+    margin-bottom: 12px;
+
+    border:
+        1px solid
+        rgba(16, 185, 129, 0.10);
+
+    border-radius: 7px;
+
+    background:
+        rgba(16, 185, 129, 0.025);
+}
+
+.status-dot {
+
+    width: 7px;
+    height: 7px;
+
+    border-radius: 50%;
+
+    background: #10b981;
+
+    box-shadow:
+        0 0 8px
+        rgba(16, 185, 129, 0.7);
+}
+
+.system-status strong {
+
+    display: block;
+
+    color: #b8d5dc;
+
+    font-size: 9px;
+}
+
+.system-status small {
+
+    color: #5f747e;
+
+    font-size: 7px;
+}
+
+.user {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+}
+
+.avatar {
+
+    width: 28px;
+    height: 28px;
+
+    display: grid;
+
+    place-items: center;
+
+    border-radius: 50%;
+
+    color: #dffaff;
+
+    background:
+        linear-gradient(
+            135deg,
+            #155e75,
+            #164e63
+        );
+
+    border:
+        1px solid
+        rgba(34, 211, 238, 0.16);
+
+    font-size: 9px;
+
+    font-weight: 700;
+}
+
+.user strong {
+
+    display: block;
+
+    color: #b9ccd2;
+
+    font-size: 9px;
+}
+
+.user small {
+
+    color: #5f747e;
+
+    font-size: 7px;
+}
+
+.user > i {
+
+    margin-left: auto;
+
+    color: #52646e;
+
+    font-size: 12px;
+}
+
+
+/* =========================================================
+   MAIN
+========================================================= */
+
+.main {
+    margin-left: 235px;
+
+    width: calc(100% - 235px);
+
+    min-height: 100vh;
+
+    background:
+        linear-gradient(
+            180deg,
+            rgba(238, 247, 252, 0.88),
+            rgba(232, 244, 250, 0.95)
+        );
+}
+
+
+/* =========================================================
+   TOP BAR
+========================================================= */
+
+.topbar {
+    height: 62px;
+
+    padding: 0 28px;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 20px;
+
+    position: sticky;
+
+    top: 0;
+
+    z-index: 50;
+
+    background:
+        rgba(255, 255, 255, 0.94);
+
+    border-bottom:
+        1px solid
+        #cfe4f0;
+
+    backdrop-filter: blur(15px);
+
+    box-shadow:
+        0 2px 12px
+        rgba(8, 65, 100, 0.05);
+}
+
+
+/* =========================================================
+   SEARCH
+========================================================= */
+
+.search {
+    width: 520px;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+    padding: 9px 12px;
+
+    border:
+        1px solid
+        #c8dfeb;
+
+    background:
+        #f7fcff;
+
+    border-radius: 7px;
+
+    transition: 0.25s;
+}
+
+.search:focus-within {
+    border-color:
+        #188dcc;
+
+    box-shadow:
+        0 0 0 3px
+        rgba(24, 141, 204, 0.08);
+}
+
+.search i {
+    color: #0879c9;
+}
+
+.search input {
+    flex: 1;
+
+    border: 0;
+
+    outline: 0;
+
+    background: transparent;
+
+    color: #12344d;
+
+    font-size: 11px;
+}
+
+.search input::placeholder {
+    color: #8aa5b5;
+}
+
+.search span {
+
+    color: #5c717c;
+
+    font-size: 9px;
+
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.08);
+
+    padding: 3px 6px;
+
+    border-radius: 4px;
+}
+
+
+/* =========================================================
+   TOP ACTIONS
+========================================================= */
+
+.top-actions {
+
+    margin-left: auto;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 20px;
+}
+
+.icon-button {
+
+    border: 0;
+
+    background: transparent;
+
+    color: #81949d;
+
+    position: relative;
+
+    font-size: 16px;
+}
+
+.icon-button:hover {
+
+    color: var(--cyan);
+}
+
+.icon-button b {
+
+    position: absolute;
+
+    right: -7px;
+    top: -6px;
+
+    background: var(--red);
+
+    color: white;
+
+    width: 13px;
+    height: 13px;
+
+    display: grid;
+
+    place-items: center;
+
+    border-radius: 50%;
+
+    font-size: 7px;
+}
+
+.top-user {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+}
+
+.top-user strong {
+
+    display: block;
+
+    font-size: 10px;
+
+    color: #d9edf2;
+}
+
+.top-user small {
+
+    color: #60747d;
+
+    font-size: 8px;
+}
+
+.mobile-menu {
+
+    display: none;
+}
+
+
+/* =========================================================
+   PAGE
+========================================================= */
+
+.page {
+
+    display: none;
+
+    padding: 32px;
+
+    animation:
+        pageFade 0.35s ease;
+}
+
+.page.active-page {
+
+    display: block;
+}
+
+@keyframes pageFade {
+
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.page-heading {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    margin-bottom: 25px;
+}
+
+.eyebrow {
+
+    color: #0879c9;
+
+    font-size: 9px;
+
+    font-weight: 700;
+
+    letter-spacing: 1.6px;
+}
+
+.page-heading h1 {
+ margin-top: 6px;
+
+    font-size: 24px;
+
+    font-weight: 600;
+
+    color: #082f4a;
+}
+
+.page-heading p {
+
+     margin-top: 5px;
+
+    color: #6d8799;
+
+    font-size: 11px;
+}
+
+
+/* =========================================================
+   BUTTONS
+========================================================= */
+
+
+         .primary-button {
+    border:
+        1px solid
+        #086aa9;
+
+    background:
+        linear-gradient(
+            135deg,
+            #0879c9,
+            #07558f
+        );
+
+    color: #ffffff;
+
+    padding: 9px 14px;
+
+    border-radius: 7px;
+
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+    font-size: 11px;
+
+    font-weight: 600;
+
+    transition: 0.25s;
+
+    box-shadow:
+        0 4px 12px
+        rgba(8, 121, 201, 0.18);
+}
+
+.primary-button:hover {
+    background:
+        linear-gradient(
+            135deg,
+            #096da9,
+            #043f69
+        );
+
+    transform: translateY(-1px);
+}
+
+
+/* =========================================================
+   CARDS
+========================================================= */
+
+.card {
+    background:
+        #ffffff;
+
+    border:
+        1px solid
+        #d3e6ef;
+
+    border-radius: var(--radius);
+
+    box-shadow:
+        0 6px 20px
+        rgba(7, 57, 86, 0.06);
+
+    transition: 0.25s;
+}
+
+.card:hover {
+    border-color:
+        #9bcfe7;
+
+    box-shadow:
+        0 8px 25px
+        rgba(7, 57, 86, 0.09);
+}
+
+
+/* =========================================================
+   STAT GRID
+========================================================= */
+
+.stats-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, 1fr);
+
+    gap: 14px;
+
+    margin-bottom: 20px;
+}
+
+.stat-card {
+
+    padding: 18px;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 13px;
+
+    background:
+        rgba(12, 19, 27, 0.86);
+
+    border:
+        1px solid
+        rgba(148, 163, 184, 0.08);
+
+    border-radius: 9px;
+
+    transition: 0.25s;
+}
+
+.stat-card:hover {
+
+    transform: translateY(-2px);
+
+    border-color:
+        rgba(34, 211, 238, 0.15);
+}
+
+.stat-icon {
+
+    width: 38px;
+    height: 38px;
+
+    display: grid;
+
+    place-items: center;
+
+    border-radius: 8px;
+
+    font-size: 15px;
+}
+
+.stat-icon.blue {
+
+    color: #38bdf8;
+
+    background:
+        rgba(56, 189, 248, 0.08);
+}
+
+.stat-icon.purple {
+
+    color: #a78bfa;
+
+    background:
+        rgba(139, 92, 246, 0.08);
+}
+
+.stat-icon.green {
+
+    color: #34d399;
+
+    background:
+        rgba(16, 185, 129, 0.08);
+}
+
+.stat-icon.red {
+
+    color: #fb7185;
+
+    background:
+        rgba(244, 63, 94, 0.08);
+}
+
+.stat-card span {
+
+    display: block;
+
+    color: #70838d;
+
+    font-size: 9px;
+
+    margin-bottom: 4px;
+}
+
+.stat-card h2 {
+
+    font-size: 20px;
+
+    color: #e6f4f7;
+}
+
+.stat-card small {
+
+    font-size: 7px;
+}
+
+.positive {
+
+    color: #34d399;
+}
+
+.negative {
+
+    color: #fb7185;
+}
+
+.danger-text {
+
+    color: #fb7185 !important;
+}
+
+
+/* =========================================================
+   DASHBOARD GRID
+========================================================= */
+
+.dashboard-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        2fr 1fr;
+
+    gap: 18px;
+
+    margin-bottom: 20px;
+}
+
+.large-card {
+
+    min-height: 310px;
+}
+
+.card-header {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    padding: 18px 20px;
+
+    border-bottom:
+        1px solid
+        rgba(255, 255, 255, 0.045);
+}
+
+.card-header h3 {
+
+    color: #d9edf2;
+
+    font-size: 12px;
+}
+
+.card-header p {
+
+    margin-top: 3px;
+
+    color: #637680;
+
+    font-size: 8px;
+}
+
+.card-header select {
+
+    padding: 7px 10px;
+
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.08);
+
+    border-radius: 5px;
+
+    background: #0c141b;
+
+    color: #8ca0aa;
+
+    font-size: 8px;
+
+    outline: none;
+}
+
+
+/* =========================================================
+   FAKE CHART
+========================================================= */
+
+.fake-chart {
+
+    height: 235px;
+
+    position: relative;
+
+    padding: 25px;
+
+    background-image:
+
+        linear-gradient(
+            rgba(148, 163, 184, 0.035) 1px,
+            transparent 1px
+        ),
+
+        linear-gradient(
+            90deg,
+            rgba(148, 163, 184, 0.025) 1px,
+            transparent 1px
+        );
+
+    background-size: 50px 45px;
+
+    overflow: hidden;
+}
+
+.chart-line {
+
+    position: absolute;
+
+    left: 5%;
+
+    right: 5%;
+
+    top: 50%;
+
+    height: 90px;
+
+    border-top:
+        2px solid
+        rgba(34, 211, 238, 0.7);
+
+    transform:
+        rotate(-3deg);
+
+    filter:
+        drop-shadow(
+            0 0 5px
+            rgba(34, 211, 238, 0.3)
+        );
+}
+
+.chart-labels {
+
+    position: absolute;
+
+    bottom: 10px;
+
+    left: 5%;
+
+    right: 5%;
+
+    display: flex;
+
+    justify-content: space-between;
+
+    color: #4e626d;
+
+    font-size: 7px;
+}
+
+
+/* =========================================================
+   RISK CIRCLE
+========================================================= */
+
+.risk-circle {
+
+    width: 145px;
+
+    height: 145px;
+
+    margin: 25px auto;
+
+    display: grid;
+
+    place-items: center;
+
+    border-radius: 50%;
+
+    background:
+        conic-gradient(
+            #10b981 0 68%,
+            #f5c451 68% 90%,
+            #ff8a3d 90% 98%,
+            #ff4d67 98% 100%
+        );
+
+    position: relative;
+}
+
+.risk-circle::before {
+
+    content: "";
+
+    position: absolute;
+
+    width: 112px;
+    height: 112px;
+
+    border-radius: 50%;
+
+    background: #0b1219;
+}
+
+.risk-circle div {
+
+    position: relative;
+
+    text-align: center;
+}
+
+.risk-circle strong {
+
+    display: block;
+
+    color: #e8f8fb;
+
+    font-size: 20px;
+}
+
+.risk-circle span {
+
+    color: #61757f;
+
+    font-size: 8px;
+}
+
+
+/* =========================================================
+   RISK LIST
+========================================================= */
+
+.risk-list {
+
+    padding: 0 20px 18px;
+}
+
+.risk-list div {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+    padding: 5px 0;
+
+    color: #80939d;
+
+    font-size: 9px;
+}
+
+.risk-list b {
+
+    margin-left: auto;
+
+    color: #b8cbd1;
+}
+
+.dot {
+
+    width: 6px;
+    height: 6px;
+
+    border-radius: 50%;
+}
+
+.dot.low {
+
+    background: #10b981;
+}
+
+.dot.medium {
+
+    background: #f5c451;
+}
+
+.dot.high {
+
+    background: #ff8a3d;
+}
+
+.dot.critical {
+
+    background: #ff4d67;
+}
+
+
+/* =========================================================
+   TABLE
+========================================================= */
+
+.table-container {
+
+    width: 100%;
+
+    overflow-x: auto;
+}
+
+table {
+
+    width: 100%;
+
+    border-collapse: collapse;
+}
+
+th {
+    padding: 12px 15px;
+
+    text-align: left;
+
+    color: #527287;
+
+    font-size: 7px;
+
+    font-weight: 700;
+
+    letter-spacing: 0.7px;
+
+    background:
+        #f1f8fc;
+
+    border-bottom:
+        1px solid
+        #d4e6ef;
+}
+
+td {
+    padding: 13px 15px;
+
+    color: #587386;
+
+    font-size: 9px;
+
+    border-bottom:
+        1px solid
+        #e3eef3;
+}
+
+tr:hover td {
+    background:
+        #f1f9fd;
+}
+
+/* =========================================================
+   BADGES
+========================================================= */
+
+.badge {
+
+    display: inline-block;
+
+    padding: 4px 7px;
+
+    border-radius: 4px;
+
+    font-size: 7px;
+
+    font-weight: 700;
+
+    letter-spacing: 0.4px;
+}
+
+.badge.high {
+
+    color: #ffad70;
+
+    background:
+        rgba(255, 138, 61, 0.09);
+}
+
+.badge.critical {
+
+    color: #ff7b8e;
+
+    background:
+        rgba(255, 77, 103, 0.09);
+}
+
+.badge.medium {
+
+    color: #f5c451;
+
+    background:
+        rgba(245, 196, 81, 0.08);
+}
+
+.badge.low {
+
+    color: #34d399;
+
+    background:
+        rgba(16, 185, 129, 0.08);
+}
+
+
+/* =========================================================
+   STATUS
+========================================================= */
+
+.status {
+
+    font-size: 8px;
+}
+
+.status.tracing {
+
+    color: #38bdf8;
+}
+
+.status.completed {
+
+    color: #34d399;
+}
+
+
+/* =========================================================
+   FORMS
+========================================================= */
+
+.form-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        1fr 1fr;
+
+    gap: 15px;
+
+    margin-bottom: 18px;
+}
+
+.input-group {
+
+    margin-bottom: 18px;
+}
+
+.input-group label {
+
+    display: block;
+
+    margin-bottom: 7px;
+
+    color: #71858f;
+
+    font-size: 8px;
+
+    font-weight: 600;
+}
+
+.input-group input,
+.input-group select,
+.wallet-search input,
+.filters input,
+.filters select {
+    width: 100%;
+
+    padding: 11px 12px;
+
+    outline: none;
+
+    border:
+        1px solid
+        #c9e0eb;
+
+    border-radius: 6px;
+
+    background:
+        #f9fdff;
+
+    color:
+        #173b53;
+
+    font-size: 10px;
+
+    transition: 0.2s;
+}
+
+.input-group input:focus,
+.input-group select:focus,
+.wallet-search input:focus,
+.filters input:focus,
+.filters select:focus {
+    border-color:
+        #168dcc;
+
+    box-shadow:
+        0 0 0 3px
+        rgba(22, 141, 204, 0.08);
+}
+
+.input-group input::placeholder,
+.wallet-search input::placeholder,
+.filters input::placeholder {
+    color: #8ca5b4;
+}
+
+
+/* =========================================================
+   INVESTIGATION CARD
+========================================================= */
+
+.investigation-card {
+
+    padding: 22px;
+
+    max-width: 850px;
+}
+
+.investigation-header {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+
+    margin-bottom: 25px;
+}
+
+.investigation-header > div:first-child {
+
+    width: 40px;
+    height: 40px;
+
+    display: grid;
+
+    place-items: center;
+
+    border-radius: 8px;
+
+    color: #38bdf8;
+
+    background:
+        rgba(56, 189, 248, 0.07);
+}
+
+.investigation-header h2 {
+
+    color: #dceff3;
+
+    font-size: 15px;
+}
+
+.investigation-header p {
+
+    margin-top: 4px;
+
+    color: #687c86;
+
+    font-size: 9px;
+}
+
+.wallet-input {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+    padding: 0 12px;
+
+    border:
+        1px solid
+        rgba(148, 163, 184, 0.10);
+
+    border-radius: 6px;
+
+    background: #0a1118;
+}
+
+.wallet-input i {
+
+    color: var(--cyan);
+
+    font-size: 11px;
+}
+
+.wallet-input input {
+
+    border: 0;
+
+    background: transparent;
+}
+
+
+/* =========================================================
+   TRACE BUTTON
+========================================================= */
+
+.trace-button {
+    width: 100%;
+
+    padding: 12px;
+
+    border:
+        1px solid
+        #086aa9;
+
+    border-radius: 7px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #0879c9,
+            #07558f
+        );
+
+    color: #ffffff;
+
+    font-size: 10px;
+
+    font-weight: 600;
+
+    transition: 0.25s;
+
+    box-shadow:
+        0 5px 15px
+        rgba(8, 121, 201, 0.15);
+}
+
+.trace-button:hover {
+    background:
+        linear-gradient(
+            135deg,
+            #096da9,
+            #043f69
+        );
+
+    transform: translateY(-1px);
+}
+
+
+/* =========================================================
+   WALLET SEARCH
+========================================================= */
+
+.wallet-search {
+
+    padding: 15px;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+    margin-bottom: 18px;
+}
+
+.wallet-search > i {
+
+    color: var(--cyan);
+}
+
+.wallet-search input {
+
+    flex: 1;
+
+    border: 0;
+
+    background: transparent;
+}
+
+
+/* =========================================================
+   FILTERS
+========================================================= */
+
+.filters {
+
+    display: grid;
+
+    grid-template-columns:
+        2fr 1fr 1fr auto;
+
+    gap: 10px;
+
+    padding: 15px;
+
+    border-bottom:
+        1px solid
+        rgba(255, 255, 255, 0.045);
+}
+
+
+/* =========================================================
+   ALERTS
+========================================================= */
+
+.alerts-grid {
+
+    display: grid;
+
+    gap: 12px;
+}
+
+.alert-card {
+
+    display: grid;
+
+    grid-template-columns:
+        45px 1fr auto;
+
+    align-items: center;
+
+    gap: 15px;
+
+    padding: 18px;
+
+    border:
+        1px solid
+        rgba(148, 163, 184, 0.08);
+
+    border-radius: 9px;
+
+    background:
+        rgba(12, 19, 27, 0.88);
+}
+
+.alert-card h3 {
+
+    margin-top: 7px;
+
+    color: #dceef2;
+
+    font-size: 12px;
+}
+
+.alert-card p {
+
+    margin-top: 5px;
+
+    color: #71848d;
+
+    font-size: 9px;
+}
+
+.alert-card small {
+
+    display: block;
+
+    margin-top: 7px;
+
+    color: #53666f;
+
+    font-size: 7px;
+}
+
+.alert-symbol {
+
+    width: 40px;
+    height: 40px;
+
+    display: grid;
+
+    place-items: center;
+
+    border-radius: 8px;
+
+    color: #38bdf8;
+
+    background:
+        rgba(56, 189, 248, 0.06);
+}
+
+.critical-alert .alert-symbol {
+
+    color: #fb7185;
+
+    background:
+        rgba(244, 63, 94, 0.07);
+}
+
+.alert-card button {
+
+    padding: 7px 10px;
+
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.08);
+
+    border-radius: 5px;
+
+    background: transparent;
+
+    color: #78909b;
+
+    font-size: 8px;
+}
+
+
+/* =========================================================
+   SETTINGS
+========================================================= */
+
+.settings-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        1fr 1fr;
+
+    gap: 18px;
+}
+
+.settings-grid .card {
+
+    padding: 20px;
+}
+
+.settings-grid h3 {
+
+    margin-bottom: 15px;
+
+    color: #d9edf1;
+
+    font-size: 12px;
+}
+
+.setting-row {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    padding: 11px 0;
+
+    border-bottom:
+        1px solid
+        rgba(255, 255, 255, 0.035);
+
+    color: #71858f;
+
+    font-size: 9px;
+}
+
+.setting-row:last-child {
+
+    border-bottom: 0;
+}
+
+.setting-row strong {
+
+    color: #b9ccd2;
+
+    font-weight: 500;
+}
+
+.connected {
+
+    color: #34d399 !important;
+}
+
+
+/* =========================================================
+   MODAL
+========================================================= */
+
+.modal {
+    position: fixed;
+
+    inset: 0;
+
+    display: none;
+
+    align-items: center;
+
+    justify-content: center;
+
+    padding: 20px;
+
+    background:
+        rgba(3, 31, 50, 0.55);
+
+    backdrop-filter: blur(7px);
+
+    z-index: 1000;
+}
+
+.modal.show {
+    display: flex;
+}
+
+.modal-content {
+    width: 600px;
+
+    max-width: 100%;
+
+    padding: 25px;
+
+    position: relative;
+
+    border:
+        1px solid
+        #b9dce9;
+
+    border-radius: 10px;
+
+    background:
+        #ffffff;
+
+    box-shadow:
+        0 30px 80px
+        rgba(3, 45, 70, 0.25);
+}
+
+.modal-content h2 {
+    color: #083653;
+
+    font-size: 18px;
+}
+
+.modal-content > p {
+    color: #718b9b;
+
+    font-size: 10px;
+
+    margin: 7px 0 25px;
+}
+
+
+/* =========================================================
+   TRACE RESULTS
+========================================================= */
+
+.trace-result {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, 1fr);
+
+    margin-bottom: 25px;
+
+    border:
+        1px solid
+        rgba(34, 211, 238, 0.10);
+
+    border-radius: 7px;
+
+    background:
+        rgba(34, 211, 238, 0.018);
+}
+
+.trace-result div {
+
+    padding: 15px;
+
+    border-right:
+        1px solid
+        rgba(255, 255, 255, 0.05);
+}
+
+.trace-result div:last-child {
+
+    border-right: 0;
+}
+
+.trace-result span {
+
+    display: block;
+
+    color: #617680;
+
+    font-size: 8px;
+
+    margin-bottom: 6px;
+}
+
+.trace-result strong {
+
+    font-size: 15px;
+
+    color: #dffaff;
+}
+
+
+/* =========================================================
+   FLOW
+========================================================= */
+
+.flow-preview {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 12px;
+
+    margin-bottom: 25px;
+
+    color: #587287;
+}
+
+.flow-node {
+    padding: 13px 18px;
+
+    border:
+        1px solid
+        #b9dcea;
+
+    background:
+        #f0f9fd;
+
+    border-radius: 7px;
+
+    color: #0879c9;
+}
+
+.flow-node span {
+    display: block;
+
+    color: #59788b;
+
+    font-size: 9px;
+}
+
+.full {
+
+    width: 100%;
+
+    justify-content: center;
+}
+
+
+/* =========================================================
+   BLOCKCHAIN PARTICLE ANIMATION
+========================================================= */
+
+@keyframes blockchainPulse {
+
+    0% {
+        opacity: 0.25;
+        transform: scale(0.9);
+    }
+
+    50% {
+        opacity: 0.7;
+        transform: scale(1);
+    }
+
+    100% {
+        opacity: 0.25;
+        transform: scale(0.9);
+    }
+}
+
+.ai-background::before {
+
+    animation:
+        blockchainPulse 5s ease-in-out infinite;
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 1000px) {
+
+    .stats-grid {
+
+        grid-template-columns:
+            1fr 1fr;
+    }
+
+    .dashboard-grid {
+
+        grid-template-columns:
+            1fr;
+    }
+
+    .filters {
+
+        grid-template-columns:
+            1fr;
+    }
+}
+
+
+@media (max-width: 700px) {
+
+    .sidebar {
+
+        transform:
+            translateX(-100%);
+
+        transition: 0.25s;
+    }
+
+    .sidebar.open {
+
+        transform:
+            translateX(0);
+    }
+
+    .main {
+
+        margin-left: 0;
+
+        width: 100%;
+    }
+
+    .topbar {
+
+        padding: 0 15px;
+    }
+
+    .mobile-menu {
+
+        display: block;
+
+        border: 0;
+
+        background: transparent;
+
+        color: var(--cyan);
+
+        font-size: 18px;
+    }
+
+    .search {
+
+        flex: 1;
+
+        width: auto;
+    }
+
+    .search span {
+
+        display: none;
+    }
+
+    .top-user {
+
+        display: none;
+    }
+
+    .page {
+
+        padding: 20px 15px;
+    }
+
+    .page-heading {
+
+        flex-direction: column;
+
+        align-items: flex-start;
+
+        gap: 15px;
+    }
+
+    .stats-grid {
+
+        grid-template-columns:
+            1fr;
+    }
+
+    .form-grid {
+
+        grid-template-columns:
+            1fr;
+    }
+
+    .settings-grid {
+
+        grid-template-columns:
+            1fr;
+    }
+
+    .trace-result {
+
+        grid-template-columns:
+            1fr 1fr;
+    }
+
+    .flow-preview {
+
+        overflow-x: auto;
+
+        justify-content: flex-start;
+    }
+
+    .alert-card {
+
+        grid-template-columns:
+            40px 1fr;
+    }
+
+    .alert-card button {
+
+        grid-column: 2;
+
+        justify-self: start;
+    }
+}
+
+/* =========================================================
+   FINAL LIGHT BLUE OVERRIDES
+========================================================= */
+
+.card-header {
+    border-bottom:
+        1px solid #e0edf3;
+}
+
+.card-header h3 {
+    color: #123b54;
+}
+
+.card-header p {
+    color: #718b9b;
+}
+
+.card-header select {
+    background: #f5fbfe;
+    color: #557386;
+    border-color: #c9e0eb;
+}
+
+.investigation-header h2 {
+    color: #123b54;
+}
+
+.investigation-header p {
+    color: #718b9b;
+}
+
+.investigation-header > div:first-child {
+    color: #0879c9;
+    background: #e8f6fc;
+}
+
+.wallet-input {
+    background: #f9fdff;
+    border-color: #c9e0eb;
+}
+
+.wallet-input input {
+    color: #173b53;
+}
+
+.wallet-search {
+    background: #ffffff;
+    border: 1px solid #d3e6ef;
+    border-radius: 8px;
+}
+
+.alert-card {
+    background: #ffffff;
+    border-color: #d3e6ef;
+    box-shadow:
+        0 4px 15px
+        rgba(8, 65, 100, 0.04);
+}
+
+.alert-card h3 {
+    color: #123b54;
+}
+
+.alert-card p {
+    color: #718b9b;
+}
+
+.alert-card small {
+    color: #8ba1ad;
+}
+
+.settings-grid .card {
+    background: #ffffff;
+}
+
+.settings-grid h3 {
+    color: #123b54;
+}
+
+.setting-row {
+    color: #718b9b;
+    border-bottom-color: #e3eef3;
+}
+
+.setting-row strong {
+    color: #31566d;
+}
+
+.icon-button {
+    color: #557386;
+}
+
+.icon-button:hover {
+    color: #0879c9;
+}
+
+.risk-circle::before {
+    background: #ffffff;
+}
+
+.risk-circle strong {
+    color: #123b54;
+}
+
+.risk-circle span {
+    color: #718b9b;
+}
+
+.risk-list div {
+    color: #668293;
+}
+
+.risk-list b {
+    color: #31566d;
+}
+
+.ai-glow.one {
+    background: #0879c9;
+    opacity: 0.07;
+}
+
+.ai-glow.two {
+    background: #38a9e8;
+    opacity: 0.06;
+}
+
+/* =========================================================
+   CRYPTOTRACE — ALL BOXES LIGHT BLUE
+========================================================= */
+
+/* Main cards */
+.card,
+.stat-card,
+.alert-card,
+.settings-grid .card,
+.investigation-card,
+.wallet-search {
+    background: #dff3fc !important;
+    border: 1px solid #a9d8ed !important;
+    box-shadow: 0 5px 18px rgba(8, 75, 110, 0.08);
+}
+
+/* Card hover */
+.card:hover,
+.stat-card:hover,
+.alert-card:hover {
+    background: #d5effb !important;
+    border-color: #79bddc !important;
+}
+
+/* Header sections inside boxes */
+.card-header {
+    background: #d8f0fa !important;
+    border-bottom: 1px solid #b8ddeb !important;
+}
+
+.card-header h3 {
+    color: #083b5c !important;
+}
+
+.card-header p {
+    color: #52778c !important;
+}
+
+/* Search box */
+.search {
+    background: #dff3fc !important;
+    border: 1px solid #a9d8ed !important;
+}
+
+.search input {
+    color: #123b54 !important;
+}
+
+/* All input boxes */
+.input-group input,
+.input-group select,
+.wallet-search input,
+.filters input,
+.filters select,
+.card-header select {
+    background: #e5f6fd !important;
+    color: #123b54 !important;
+    border: 1px solid #a9d8ed !important;
+}
+
+/* Input focus */
+.input-group input:focus,
+.input-group select:focus,
+.wallet-search input:focus,
+.filters input:focus,
+.filters select:focus {
+    background: #eefaff !important;
+    border-color: #168dcc !important;
+    box-shadow: 0 0 0 3px rgba(22, 141, 204, 0.10);
+}
+
+/* Wallet input */
+.wallet-input {
+    background: #e5f6fd !important;
+    border: 1px solid #a9d8ed !important;
+}
+
+.wallet-input input {
+    color: #123b54 !important;
+}
+
+/* Investigation header */
+.investigation-header > div:first-child {
+    background: #ccecf9 !important;
+    color: #0879c9 !important;
+}
+
+/* Flow boxes */
+.flow-node {
+    background: #d8f2fb !important;
+    border: 1px solid #9ed2e8 !important;
+    color: #0879c9 !important;
+}
+
+/* Table */
+.table-container {
+    background: #dff3fc !important;
+}
+
+th {
+    background: #ccebf8 !important;
+    color: #315f76 !important;
+    border-bottom: 1px solid #a9d8ed !important;
+}
+
+td {
+    background: #e5f6fd !important;
+    color: #426b80 !important;
+    border-bottom: 1px solid #c7e3ee !important;
+}
+
+tr:hover td {
+    background: #ccecf9 !important;
+}
+
+/* Filters */
+.filters {
+    background: #d8f0fa !important;
+    border-bottom: 1px solid #afd7e8 !important;
+}
+
+/* Risk box */
+.risk-circle::before {
+    background: #dff3fc !important;
+}
+
+.risk-list {
+    background: transparent !important;
+}
+
+.risk-list div {
+    color: #52778c !important;
+}
+
+.risk-list b {
+    color: #164b68 !important;
+}
+
+/* Alert symbols */
+.alert-symbol {
+    background: #ccecf9 !important;
+    color: #0879c9 !important;
+}
+
+/* Modal */
+.modal-content {
+    background: #dff3fc !important;
+    border: 1px solid #9ed2e8 !important;
+}
+
+.loading-icon {
+    background: #ccecf9 !important;
+}
+
+/* Trace result boxes */
+.trace-result {
+    background: #d8f0fa !important;
+    border: 1px solid #9ed2e8 !important;
+}
+
+.trace-result div {
+    background: #dff3fc !important;
+    border-right: 1px solid #b5dbe9 !important;
+}
+
+.trace-result strong {
+    color: #083b5c !important;
+}
+
+/* Settings */
+.setting-row {
+    background: transparent !important;
+    color: #52778c !important;
+    border-bottom: 1px solid #c5e1ec !important;
+}
+
+.setting-row strong {
+    color: #174b67 !important;
+}
+
+/* Status boxes */
+.system-status {
+    background: #d8f3e9 !important;
+    border: 1px solid #9ed8c3 !important;
+}
+
+/* Stat icons */
+.stat-icon.blue {
+    background: #ccecf9 !important;
+}
+
+.stat-icon.purple {
+    background: #dfe7ff !important;
+}
+
+.stat-icon.green {
+    background: #d8f3e9 !important;
+}
+
+.stat-icon.red {
+    background: #ffe0e5 !important;
+}
+
+/* Chart area */
+.fake-chart {
+    background-color: #dff3fc !important;
+
+    background-image:
+        linear-gradient(
+            rgba(8, 121, 201, 0.08) 1px,
+            transparent 1px
+        ),
+        linear-gradient(
+            90deg,
+            rgba(8, 121, 201, 0.08) 1px,
+            transparent 1px
+        ) !important;
+}
+
+/* Primary buttons */
+.primary-button,
+.trace-button {
+    background: #07558f !important;
+    color: #ffffff !important;
+    border: 1px solid #064b7d !important;
+}
+
+.primary-button:hover,
+.trace-button:hover {
+    background: #0879c9 !important;
+}
+
+/* Notification */
+.notification {
+    background: #ffe0e5 !important;
+    color: #c92f47 !important;
+}
+
+/* Make page background slightly blue */
+.main {
+    background:
+        linear-gradient(
+            180deg,
+            #eef9fd,
+            #e6f4fa
+        ) !important;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar-thumb {
+    background: #8fc9e2;
+}
+
+::-webkit-scrollbar-track {
+    background: #e1f2f8;
+}
+
+/* =========================================================
+   CRYPTOTRACE — BLACK TEXT
+========================================================= */
+
+/* Main text */
+body,
+.main,
+.page,
+.card,
+.stat-card,
+.alert-card,
+.investigation-card,
+.wallet-search,
+.table-container,
+.modal-content {
+    color: #000000 !important;
+}
+
+/* Headings */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.card-header h3,
+.stat-card h3,
+.investigation-card h3 {
+    color: #000000 !important;
+}
+
+/* Paragraphs and secondary text */
+p,
+.card-header p,
+.stat-card p,
+label,
+small,
+.muted {
+    color: #111111 !important;
+}
+
+/* Sidebar text stays white */
+.sidebar,
+.sidebar *,
+.logo,
+.logo-text,
+.menu-item,
+.menu-item span,
+.sidebar-user,
+.sidebar-status {
+    color: #ffffff !important;
+}
+
+/* Topbar */
+.topbar,
+.topbar *,
+.search,
+.search input {
+    color: #000000 !important;
+}
+
+/* Inputs */
+input,
+select,
+textarea {
+    color: #000000 !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+    color: #555555 !important;
+}
+
+/* Tables */
+th {
+    color: #000000 !important;
+}
+
+td {
+    color: #111111 !important;
+}
+
+/* Buttons */
+.primary-button,
+.trace-button {
+    color: #ffffff !important;
+}
+
+/* Flow boxes */
+.flow-node {
+    color: #000000 !important;
+}
+
+/* Risk information */
+.risk-list,
+.risk-list div,
+.risk-list b {
+    color: #000000 !important;
+}
+
+/* Investigation / trace results */
+.trace-result,
+.trace-result div,
+.trace-result strong {
+    color: #000000 !important;
+}
+
+/* Settings */
+.setting-row,
+.setting-row strong {
+    color: #000000 !important;
+}
+
+/* Links */
+a {
+    color: #07558f;
+}
+
+/* Status / badges */
+.badge,
+.status,
+.tag {
+    color: #000000 !important;
+}
+
+/* =========================================================
+   SYSTEM ONLINE BOX — BLACK TEXT
+========================================================= */
+
+.system-status {
+    background: #d8f3e9 !important;
+    border: 1px solid #9ed8c3 !important;
+    color: #000000 !important;
+}
+
+/* System Online heading */
+.system-status h4,
+.system-status h3,
+.system-status strong,
+.system-status span {
+    color: #000000 !important;
+}
+
+/* Blockchain engine active text */
+.system-status p,
+.system-status small,
+.system-status div {
+    color: #000000 !important;
+}
+
+/* Green status dot stays green */
+.system-status .status-dot,
+.system-status .dot {
+    background: #10b981 !important;
+}
+
+/* =========================================================
+   CRYPTOTRACE — FINAL LIGHT BLUE SIDEBAR + BLACK TEXT
+   This override is intentionally at the end so it takes
+   priority over the earlier dark-sidebar rules.
+========================================================= */
+
+/* LEFT SIDEBAR */
+.sidebar {
+    background: linear-gradient(
+        180deg,
+        #dff4fc 0%,
+        #cfeefa 100%
+    ) !important;
+    border-right: 1px solid #9ed5eb !important;
+    box-shadow: 4px 0 20px rgba(8, 75, 110, 0.10) !important;
+}
+
+/* LOGO */
+.logo {
+    border-bottom: 1px solid #a9d8ed !important;
+}
+
+.logo h2,
+.logo-text {
+    color: #062b49 !important;
+}
+
+.logo small,
+.logo-text small {
+    color: #174b67 !important;
+}
+
+.logo-box {
+    color: #ffffff !important;
+}
+
+/* SIDEBAR SECTION TITLES */
+.menu-title {
+    color: #07558f !important;
+}
+
+/* SIDEBAR MENU */
+.menu-item {
+    color: #08263d !important;
+    background: transparent !important;
+    border-color: transparent !important;
+}
+
+.menu-item i,
+.menu-item span {
+    color: #08263d !important;
+}
+
+.menu-item:hover {
+    color: #062b49 !important;
+    background: #c5e8f7 !important;
+    border-color: #9ed5eb !important;
+}
+
+.menu-item:hover i,
+.menu-item:hover span {
+    color: #062b49 !important;
+}
+
+.menu-item.active {
+    color: #062b49 !important;
+    background: #b9e2f5 !important;
+    border: 1px solid #79c4e5 !important;
+    box-shadow:
+        inset 3px 0 0 #0879c9,
+        0 3px 10px rgba(8, 121, 201, 0.08) !important;
+}
+
+.menu-item.active i,
+.menu-item.active span {
+    color: #062b49 !important;
+}
+
+/* ALERT COUNT */
+.notification {
+    background: #ffdce3 !important;
+    color: #c92f47 !important;
+}
+
+/* SIDEBAR BOTTOM */
+.sidebar-bottom {
+    border-top: 1px solid #a9d8ed !important;
+}
+
+/* SYSTEM ONLINE */
+.system-status {
+    background: #d8f3e9 !important;
+    border: 1px solid #9ed8c3 !important;
+    color: #000000 !important;
+}
+
+.system-status strong,
+.system-status small {
+    color: #000000 !important;
+}
+
+.status-dot {
+    background: #10b981 !important;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.45) !important;
+}
+
+/* INVESTIGATOR */
+.user {
+    color: #000000 !important;
+}
+
+.user strong {
+    color: #000000 !important;
+}
+
+.user small {
+    color: #234b63 !important;
+}
+
+.user > i {
+    color: #062b49 !important;
+}
+
+.avatar {
+    color: #ffffff !important;
+    background: linear-gradient(
+        135deg,
+        #0879c9,
+        #07558f
+    ) !important;
+    border-color: #58b9e5 !important;
+}
+
+/* REMOVE THE OLD "SIDEBAR TEXT WHITE" EFFECT */
+.sidebar *,
+.sidebar .logo *,
+.sidebar .menu-item *,
+.sidebar .user * {
+    color: inherit;
+}
+
+/* Re-apply required sidebar colors after the inherit reset */
+.sidebar .logo h2 {
+    color: #062b49 !important;
+}
+
+.sidebar .logo small {
+    color: #174b67 !important;
+}
+
+.sidebar .menu-title {
+    color: #07558f !important;
+}
+
+.sidebar .menu-item,
+.sidebar .menu-item i,
+.sidebar .menu-item span {
+    color: #08263d !important;
+}
+
+.sidebar .menu-item.active,
+.sidebar .menu-item.active i,
+.sidebar .menu-item.active span {
+    color: #062b49 !important;
+}
+
+.sidebar .notification {
+    color: #c92f47 !important;
+}
+
+.sidebar .system-status,
+.sidebar .system-status strong,
+.sidebar .system-status small {
+    color: #000000 !important;
+}
+
+.sidebar .user strong {
+    color: #000000 !important;
+}
+
+.sidebar .user small {
+    color: #234b63 !important;
+}
+
+.sidebar .user > i {
+    color: #062b49 !important;
+}
+
+.sidebar .avatar {
+    color: #ffffff !important;
+}
+
+/* MAIN CONTENT */
+.main {
+    background: linear-gradient(
+        180deg,
+        #eef9fd 0%,
+        #e6f4fa 100%
+    ) !important;
+    color: #000000 !important;
+}
+
+/* TOP BAR */
+.topbar {
+    background: rgba(255, 255, 255, 0.96) !important;
+    border-bottom-color: #cfe4f0 !important;
+}
+
+.search {
+    background: #dff3fc !important;
+    border-color: #a9d8ed !important;
+}
+
+.search input {
+    color: #000000 !important;
+}
+
+.search input::placeholder {
+    color: #555555 !important;
+}
+
+/* ALL MAIN BOXES */
+.card,
+.stat-card,
+.alert-card,
+.investigation-card,
+.wallet-search,
+.table-container,
+.trace-result,
+.modal-content,
+.settings-grid .card {
+    background: #dff3fc !important;
+    border-color: #a9d8ed !important;
+    color: #000000 !important;
+}
+
+/* HEADINGS AND NORMAL TEXT */
+.main h1,
+.main h2,
+.main h3,
+.main h4,
+.main h5,
+.main h6,
+.main strong {
+    color: #000000 !important;
+}
+
+.main p,
+.main span,
+.main label,
+.main small {
+    color: #111111 !important;
+}
+
+/* TABLE */
+th {
+    background: #ccebf8 !important;
+    color: #000000 !important;
+    border-bottom-color: #a9d8ed !important;
+}
+
+td {
+    background: #e5f6fd !important;
+    color: #000000 !important;
+    border-bottom-color: #c7e3ee !important;
+}
+
+tr:hover td {
+    background: #ccecf9 !important;
+}
+
+/* INPUTS */
+.input-group input,
+.input-group select,
+.wallet-search input,
+.filters input,
+.filters select,
+.card-header select,
+.wallet-input,
+.wallet-input input {
+    background: #e5f6fd !important;
+    color: #000000 !important;
+    border-color: #a9d8ed !important;
+}
+
+.input-group input::placeholder,
+.wallet-search input::placeholder,
+.filters input::placeholder {
+    color: #555555 !important;
+}
+
+/* CARD HEADERS */
+.card-header {
+    background: #d8f0fa !important;
+    border-bottom-color: #b8ddeb !important;
+}
+
+.card-header h3,
+.card-header p {
+    color: #000000 !important;
+}
+
+/* CHART */
+.fake-chart {
+    background-color: #dff3fc !important;
+    background-image:
+        linear-gradient(
+            rgba(8, 121, 201, 0.08) 1px,
+            transparent 1px
+        ),
+        linear-gradient(
+            90deg,
+            rgba(8, 121, 201, 0.08) 1px,
+            transparent 1px
+        ) !important;
+}
+
+/* RISK */
+.risk-circle::before {
+    background: #dff3fc !important;
+}
+
+.risk-circle strong,
+.risk-circle span,
+.risk-list div,
+.risk-list b {
+    color: #000000 !important;
+}
+
+/* FLOW */
+.flow-node {
+    background: #d8f2fb !important;
+    border-color: #9ed2e8 !important;
+    color: #000000 !important;
+}
+
+.flow-node span {
+    color: #000000 !important;
+}
+
+/* TRACE RESULTS */
+.trace-result div {
+    background: #dff3fc !important;
+    border-right-color: #b5dbe9 !important;
+}
+
+.trace-result strong,
+.trace-result span {
+    color: #000000 !important;
+}
+
+/* SETTINGS */
+.setting-row {
+    color: #000000 !important;
+    border-bottom-color: #c5e1ec !important;
+}
+
+.setting-row strong {
+    color: #000000 !important;
+}
+
+/* ALERTS */
+.alert-card h3,
+.alert-card p,
+.alert-card small {
+    color: #000000 !important;
+}
+
+.alert-symbol {
+    background: #ccecf9 !important;
+    color: #0879c9 !important;
+}
+
+/* BUTTONS */
+.primary-button,
+.trace-button {
+    background: #07558f !important;
+    color: #ffffff !important;
+    border-color: #064b7d !important;
+}
+
+.primary-button:hover,
+.trace-button:hover {
+    background: #0879c9 !important;
+}
+
+/* SCROLLBAR */
+::-webkit-scrollbar-thumb {
+    background: #8fc9e2;
+}
+
+::-webkit-scrollbar-track {
+    background: #e1f2f8;
+}
+
+
+/* =========================================================
+   NEW ENHANCEMENTS: HELPER TEXT & ANALYTICS BAR STYLING
+========================================================= */
+
+/* Explanatory subtitle under inputs */
+.helper-text {
+    display: block;
+    font-size: 8px !important;
+    color: #4b6a7d !important;
+    margin-top: 4px;
+    line-height: 1.4;
+}
+
+/* Modal close button */
+.modal-close {
+    position: absolute;
+    top: 15px;
+    right: 18px;
+    background: transparent;
+    border: none;
+    font-size: 24px;
+    font-weight: 700;
+    color: #083b5c;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.modal-close:hover {
+    color: #d9364f;
+}
+
+/* Typology Analytics progress container */
+.horizontal-bars {
+    padding: 18px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.horizontal-bars > div {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+}
+
+.horizontal-bars > div > span {
+    width: 220px;
+    font-size: 10px;
+    font-weight: 600;
+    color: #08263d !important;
+}
+
+/* Track container */
+.horizontal-bars > div > div {
+    flex: 1;
+    height: 12px;
+    background: #cbe9f7 !important;
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid #9ed5eb;
+}
+
+/* Active colored fill */
+.horizontal-bars > div > div > b {
+    display: block;
+    height: 100%;
+    background: linear-gradient(90deg, #0879c9, #05558f) !important;
+    border-radius: 6px;
+    transition: width 0.4s ease;
+}
+
+/* Percentage & count tag */
+.horizontal-bars > div > strong {
+    min-width: 90px;
+    text-align: right;
+    font-size: 10px;
+    color: #083b5c !important;
+}

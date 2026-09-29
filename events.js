@@ -1,0 +1,28 @@
+// Static event bindings; no inline handlers or eval.
+document.querySelector('[data-bind-0]').addEventListener("click", function(event) { showPage('dashboard', this); });
+document.querySelector('[data-bind-1]').addEventListener("click", function(event) { showPage('investigations', this); });
+document.querySelector('[data-bind-2]').addEventListener("click", function(event) { showPage('wallets', this); });
+document.querySelector('[data-bind-3]').addEventListener("click", function(event) { showPage('transactions', this); });
+document.querySelector('[data-bind-4]').addEventListener("click", function(event) { showPage('alerts', this); });
+document.querySelector('[data-bind-5]').addEventListener("click", function(event) { showPage('analytics', this); });
+document.querySelector('[data-bind-6]').addEventListener("click", function(event) { showPage('reports', this); });
+document.querySelector('[data-bind-7]').addEventListener("click", function(event) { showPage('settings', this); });
+document.querySelector('[data-bind-8]').addEventListener("click", function(event) { toggleSidebar(); });
+document.querySelector('[data-bind-9]').addEventListener("keydown", function(event) { handleGlobalSearch(event); });
+document.querySelector('[data-bind-10]').addEventListener("click", function(event) { showPage('alerts', document.querySelectorAll('.menu-item')[4]); });
+document.querySelector('[data-bind-11]').addEventListener("click", function(event) { openInvestigation(); });
+document.querySelector('[data-bind-12]').addEventListener("click", function(event) { showPage('reports', document.querySelectorAll('.menu-item')[6]); });
+document.querySelector('[data-bind-13]').addEventListener("click", function(event) { resetInvestigationForm(); });
+document.querySelector('[data-bind-14]').addEventListener("input", function(event) { handleWalletAddressInput(); });
+document.querySelector('[data-bind-15]').addEventListener("change", function(event) { validateAddressAndChain(); });
+document.querySelector('[data-bind-16]').addEventListener("click", function(event) { startTrace(); });
+document.querySelector('[data-bind-17]').addEventListener("click", function(event) { analyzeStandaloneWallet(); });
+document.querySelector('[data-bind-18]').addEventListener("change", function(event) { filterTransactionsTable(); });
+document.querySelector('[data-bind-19]').addEventListener("click", function(event) { openLatestReport(); });
+document.querySelector('[data-bind-20]').addEventListener("click", function(event) { saveInvestigatorSettings(); });
+document.querySelector('[data-bind-21]').addEventListener("click", function(event) { checkSystemDiagnostics(); });
+document.querySelector('[data-bind-23]').addEventListener("click", function(event) { generateReport(); });
+document.querySelectorAll('.help-trigger').forEach(button=>button.addEventListener('click',()=>document.getElementById('helpDialog').showModal()));
+document.getElementById('closeHelp').addEventListener('click',()=>document.getElementById('helpDialog').close());
+document.getElementById('dashboardStart').addEventListener('click',openInvestigation);
+document.getElementById('dashboardReports').addEventListener('click',()=>showPage('reports'));

@@ -1,0 +1,16 @@
+[Unit]
+Description=CryptoTrace investigation API
+After=network-online.target postgresql.service
+[Service]
+User=cryptotrace
+Group=cryptotrace
+WorkingDirectory=/opt/cryptotrace
+EnvironmentFile=/etc/cryptotrace/production.env
+ExecStart=/opt/cryptotrace/.venv/bin/python -m uvicorn main:app --host 127.0.0.1 --port 8000 --workers 2 --proxy-headers --forwarded-allow-ips 127.0.0.1 --limit-concurrency 16 --no-access-log
+Restart=on-failure
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+[Install]
+WantedBy=multi-user.target

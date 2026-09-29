@@ -1,0 +1,13 @@
+-- Run after manage.py migrate using an administrator/migration role.
+-- Create cryptotrace_app with a password supplied through your secret manager.
+-- Never grant the web process superuser, database owner or schema-creation privileges.
+GRANT CONNECT ON DATABASE cryptotrace TO cryptotrace_app;
+GRANT USAGE ON SCHEMA public TO cryptotrace_app;
+GRANT SELECT ON ct_users TO cryptotrace_app;
+GRANT SELECT,INSERT,UPDATE,DELETE ON ct_sessions TO cryptotrace_app;
+GRANT SELECT,INSERT ON ct_audit,ct_traces TO cryptotrace_app;
+GRANT SELECT,INSERT,UPDATE ON ct_cases,ct_entities TO cryptotrace_app;
+GRANT USAGE,SELECT ON SEQUENCE ct_audit_id_seq TO cryptotrace_app;
+REVOKE CREATE ON SCHEMA public FROM PUBLIC;
+
+GRANT SELECT,INSERT,UPDATE ON ct_attribution_sources,ct_online_entities TO cryptotrace_app;

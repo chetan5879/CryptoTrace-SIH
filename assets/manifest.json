@@ -1,0 +1,34 @@
+{
+  "vis-network.min.js": {
+    "source": "https://unpkg.com/vis-network@10.1.2/standalone/umd/vis-network.min.js",
+    "sha256": "fc674cfa6cceb27a3b40ff4ea75c204a2d8570fb39b9a627127cf7039e141ad4"
+  },
+  "jspdf.umd.min.js": {
+    "source": "https://unpkg.com/jspdf@4.2.1/dist/jspdf.umd.min.js",
+    "sha256": "e6551fcdc32f09d6853b2c5126d18d01d9447e0da618a41a11ebeee0f6c20d54"
+  },
+  "jspdf.plugin.autotable.min.js": {
+    "source": "https://unpkg.com/jspdf-autotable@5.0.8/dist/jspdf.plugin.autotable.min.js",
+    "sha256": "a65dff2c6a8296b16aff24e69f7683cd7dbaed4a4ec26b507d6840ee27d54649"
+  },
+  "fontawesome.min.css": {
+    "source": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css",
+    "sha256": "de62af4b2907a24ce7b020ffa81e8caab4930df1ee344c6145ace4050e53c17a"
+  },
+  "fa-solid-900.woff2": {
+    "source": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/webfonts/fa-solid-900.woff2",
+    "sha256": "ae17c16afbea216707b2203ea1cf9bdb45b9bfe47d0f4ae3258ddbc6294dd02f"
+  },
+  "fa-regular-400.woff2": {
+    "source": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/webfonts/fa-regular-400.woff2",
+    "sha256": "c27da6f833431da5aa295c44540bfac0fd8270ba6a3c4346427006d8a7b34b76"
+  },
+  "report-regular.ttf": {
+    "source": "DejaVu Fonts 2.37 / Debian fonts-dejavu-core",
+    "sha256": "ae7b7855e115a5966d8b1b3f80f254ccc117ec86f9965e202ee2940453837280"
+  },
+  "report-bold.ttf": {
+    "source": "DejaVu Fonts 2.37 / Debian fonts-dejavu-core",
+    "sha256": "5c1247acef7f2b8522a31742c76d6adcb5569bacc0be7ceaa4dc39dd252ce895"
+  }
+}

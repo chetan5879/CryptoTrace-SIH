@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRYPTOTRACE | Autonomous Blockchain Intelligence</title>
+
+    <!-- Interactive Graph Library -->
+    <script src="/assets/vis-network.min.js"></script>
+
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Locally served icons; no external CDN requests at runtime. -->
+    <link rel="stylesheet" href="/assets/fontawesome.min.css">
+    
+</head>
+
+<body class="signed-out">
+<section id="loginScreen" class="login-screen">
+ <form id="loginForm" class="login-card">
+  <span class="eyebrow">CRYPTOPHERS / CRYPTOTRACE</span>
+  <h1>Investigator sign in</h1><p>Authorised access to the investigation workspace.</p>
+  <label for="loginUsername">Username</label><input id="loginUsername" autocomplete="username" required maxlength="64">
+  <label for="loginPassword">Password</label><input id="loginPassword" type="password" autocomplete="current-password" required maxlength="256">
+  <button class="primary-button" type="submit">Sign in</button>
+  <p id="loginError" role="alert"></p><small>Access and investigation actions are logged. Accounts are issued by your administrator.</small>
+ </form>
+</section>
+
+<div class="app">
+
+    <!-- ================= SIDEBAR ================= -->
+    <aside class="sidebar" id="sidebar">
+
+        <div class="logo">
+            <div class="logo-box">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <div>
+                <h2>CRYPTOTRACE</h2>
+                <small>Autonomous Forensics</small>
+            </div>
+        </div>
+
+        <div class="menu-section">
+            <p class="menu-title">OPERATIONS</p>
+
+            <button class="menu-item active" data-bind-0="">
+                <i class="fa-solid fa-house"></i>
+                <span>Dashboard</span>
+            </button>
+
+            <button class="menu-item" data-bind-1="">
+                <i class="fa-solid fa-crosshairs"></i>
+                <span>Trace Engine</span>
+            </button>
+
+            <button class="menu-item" data-bind-2="">
+                <i class="fa-solid fa-wallet"></i>
+                <span>Wallet Intelligence</span>
+            </button>
+
+            <button class="menu-item" data-bind-3="">
+                <i class="fa-solid fa-link"></i>
+                <span>Transaction Explorer</span>
+            </button>
+
+            <button class="menu-item" data-bind-4="">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span>Alerts</span>
+                <b class="notification" id="sidebarAlertCount">0</b>
+            </button>
+
+            <button class="menu-item" data-bind-5="">
+                <i class="fa-solid fa-chart-pie"></i>
+                <span>Typology Analytics</span>
+            </button>
+
+            <button class="menu-item" data-bind-6="">
+                <i class="fa-solid fa-file-contract"></i>
+                <span>Investigation Reports</span>
+            </button>
+
+            <p class="menu-title system">SYSTEM</p>
+
+            <button class="menu-item" data-bind-7="">
+                <i class="fa-solid fa-sliders"></i>
+                <span>Diagnostics & Setup</span>
+            </button>
+        </div>
+
+        <div class="sidebar-bottom">
+            <div class="system-status">
+                <span class="status-dot"></span>
+                <div>
+                    <strong>Authenticated workspace</strong>
+                    <small>Check provider diagnostics</small>
+                </div>
+            </div>
+
+            <div class="user">
+                <div class="avatar">LEA</div>
+                <div>
+                    <strong>Investigator</strong>
+                    <small>Cyber Crime Unit</small>
+                </div>
+            </div>
+        </div>
+
+    </aside>
+
+    <!-- ================= MAIN CONTENT ================= -->
+    <main class="main">
+
+        <!-- ================= TOP BAR ================= -->
+        <header class="topbar">
+            <button class="mobile-menu" aria-label="Toggle navigation" aria-expanded="false" aria-controls="sidebar" data-bind-8="">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+
+            <!-- Functional Search Bar -->
+            <div class="search">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input
+                    id="globalSearchInput"
+                    type="text"
+                    aria-label="Quick wallet search"
+                    placeholder="Search a wallet address…"
+                    data-bind-9=""
+                >
+            </div>
+
+            <div class="top-actions"><button id="openGraphs" class="small-button"><i class="fa-solid fa-diagram-project" aria-hidden="true"></i> Graphs <span id="graphCount">0</span></button><button id="auditButton" class="small-button"><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i> Access history</button><button id="logoutButton" class="small-button"><i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i> Sign out</button>
+                <button class="icon-button" data-bind-10="" title="View High Risk Alerts">
+                    <i class="fa-regular fa-bell"></i>
+                    <b id="topbarAlertCount">0</b>
+                </button>
+
+                <div class="top-user">
+                    <div class="avatar">LEA</div>
+                    <div>
+                        <strong>Investigator</strong>
+                        <small>Official Access</small>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- ================= DASHBOARD ================= -->
+        <section class="page active-page" id="dashboard">
+            <div class="page-heading">
+                <div>
+                    <span class="eyebrow">COMMAND CENTER</span>
+                    <h1>Investigation Dashboard</h1>
+                    <p>High-level threat matrix and active cybercrime case attribution.</p>
+                </div>
+
+                <button class="primary-button" data-bind-11="">
+                    <i class="fa-solid fa-plus"></i>
+                    New Investigation
+                </button>
+            </div>
+
+            <!-- STAT CARDS -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon blue"><i class="fa-solid fa-folder-open"></i></div>
+                    <div>
+                        <span>Registered Cases</span>
+                        <h2 id="dashTotalCases">0</h2> 
+                        <small class="positive">Saved investigations</small>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon purple"><i class="fa-solid fa-network-wired"></i></div>
+                    <div>
+                        <span>Observed graph nodes</span>
+                        <h2 id="dashWalletsTraced">0</h2> 
+                        <small class="positive">Multi-hop Topology</small>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon green"><i class="fa-solid fa-shield-halved"></i></div>
+                    <div>
+                        <span>Off-Ramp Tracking</span>
+                        <h2 class="stat-text">Analyst leads</h2> 
+                        <small class="positive">Source-backed entity labels</small>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon red"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                    <div>
+                        <span>High-score cases</span>
+                        <h2 id="dashHighRisk">0</h2> 
+                        <small class="negative">Score ≥ 50/100</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DASHBOARD CHARTS & RISK METRICS -->
+            <div class="dashboard-grid">
+                <div class="card large-card">
+                    <div class="card-header"><div><h3>Investigation workspace</h3><p>Open a trace or continue from a saved case.</p></div><button class="help-trigger small-button" type="button" title="How to use CryptoTrace"><i class="fa-regular fa-circle-question" aria-hidden="true"></i> Help</button></div>
+                    <div class="workspace-actions"><div class="workspace-symbol"><i class="fa-solid fa-diagram-project" aria-hidden="true"></i></div><h3>Follow the observed trail</h3><p>Start with a reported wallet. Explore its connections, inspect individual transfers, then export your findings.</p><div><button id="dashboardStart" class="primary-button"><i class="fa-solid fa-plus" aria-hidden="true"></i> New investigation</button><button id="dashboardReports" class="small-button">Saved investigations <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button></div></div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <h3>Risk Severity Distribution</h3>
+                            <p>Heuristic triage indicators; unknown scores excluded</p>
+                        </div>
+                    </div>
+
+                    <div class="risk-circle">
+                        <div>
+                            <strong id="dashTotalCasesCircle">Live</strong>
+                            <span>Cases</span>
+                        </div>
+                    </div>
+
+                    <p id="unknownRisk">Unknown risk: 0</p><div class="risk-list">
+                        <div><span class="dot low"></span> Low (0-19) <b id="pctLow">0%</b></div>
+                        <div><span class="dot medium"></span> Medium (20-49) <b id="pctMedium">0%</b></div>
+                        <div><span class="dot high"></span> High (50-79) <b id="pctHigh">0%</b></div>
+                        <div><span class="dot critical"></span> Critical (80-100) <b id="pctCritical">0%</b></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RECENT CASES -->
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <h3>Recent Case Ledger</h3>
+                        <p>Most recent autonomous traces recorded in system database</p>
+                    </div>
+                    <button class="text-button" data-bind-12="">
+                        View Dossiers <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>CASE REFERENCE</th>
+                                <th>TARGET WALLET</th>
+                                <th>NETWORK</th>
+                                <th>FRAUD CLASSIFICATION</th>
+                                <th>THREAT SEVERITY</th>
+                                <th>STATUS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Database records loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= INVESTIGATIONS (TRACE ENGINE) ================= -->
+        <!-- ================= INVESTIGATIONS (TRACE ENGINE) ================= -->
+        <section class="page" id="investigations">
+            <div class="page-heading">
+                <div>
+                    <span class="eyebrow">FORENSIC ENGINE</span>
+                    <h1>Multi-Hop Blockchain Trace</h1>
+                    <p>Trace capital flight across intermediary accounts and identify VASP liquidation points.</p>
+                </div>
+
+                <button class="primary-button" data-bind-13="">
+                    <i class="fa-solid fa-rotate-left"></i>
+                    Reset Form
+                </button>
+            </div>
+
+            <div class="card investigation-form">
+                
+                <div class="form-grid">
+                    <div class="input-group">
+                        <label>NCRP Case Reference ID</label>
+                        <input id="caseId" placeholder="e.g., NCRP-2026-9481">
+                        <small class="helper-text">Official police case reference or complaint number for legal attribution.</small>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Reported Cybercrime Typology</label>
+                        <select id="fraudType">
+                            <option>Investment Scam</option>
+                            <option>Task-Based Fraud</option>
+                            <option>Phishing & Approval Drainer</option>
+                            <option>Ransomware Extortion</option>
+                            <option>Unauthorized Exchange Transfer</option>
+                            <option>Darknet Laundering</option>
+                        </select>
+                        <small class="helper-text">Defines investigative context and customizes the final legal report.</small>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <div class="wallet-label-row">
+                        <label>Suspect / Reported Wallet Address</label>
+                        <!-- Dynamic Validation Badge -->
+                        <span id="walletValidationBadge" hidden></span>
+                    </div>
+
+                    <div class="wallet-input" id="walletInputWrapper">
+                        <i class="fa-solid fa-wallet"></i>
+                        <input 
+                            id="walletInput" 
+                            placeholder="Paste 0x (EVM), T... (Tron), or 1/3/bc1 (Bitcoin) address..." 
+                            data-bind-14=""
+                        >
+                    </div>
+                    <small class="helper-text" id="walletHelperText">The initial flagged wallet identified in the victim's statement.</small>
+                    
+                    <!-- Mismatch Error Banner -->
+                    <div id="walletMismatchError" hidden>
+                        <i class="fa-solid fa-circle-exclamation"></i> <span id="mismatchMessageText">Address and cryptocurrency used do not match!</span>
+                    </div>
+                </div>
+
+                <div class="form-grid">
+                    <div class="input-group">
+                        <label>Blockchain Network</label>
+                        <select id="blockchain" data-bind-15=""><option value="" selected>Choose the incident network</option>
+                            <option value="Ethereum">Ethereum (ETH / ERC-20)</option>
+                            <option value="Tron">Tron (TRC-20 USDT & TRX)</option>
+                            <option value="Bitcoin">Bitcoin (BTC UTXO)</option>
+                            <option value="BNB Chain">BNB Chain (BSC / BEP-20)</option>
+                            <option value="Polygon">Polygon (MATIC / ERC-20)</option>
+                        </select>
+                        <small class="helper-text">Ethereum and Polygon use Alchemy; BNB uses NodeReal; Tron uses TronScan; Bitcoin uses Mempool.</small>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Trace Depth (Max Recursive Hops)</label>
+                        <select id="hopDepth">
+                            <option value="1">1 Hop (Direct Counterparties Only)</option>
+                            <option value="2" selected>2 Hops (Standard Layering Trace)</option>
+                            <option value="3">3 Hops (Deep Off-Ramp Search)</option>
+                        </select>
+                        <small class="helper-text">Higher hops expand outgoing relationships to identify possible exchange leads. Cash-out is not proven.</small>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Fan-In / Fan-Out Threshold</label>
+                    <div class="wallet-input">
+                        <i class="fa-solid fa-code-branch"></i>
+                        <input type="number" id="fanThreshold" value="5" min="2" max="50">
+                    </div>
+                    <small class="helper-text">Minimum counterparties required to trigger automated Fan-Out or Fan-In red flags.</small>
+                </div>
+
+                <button class="trace-button" data-bind-16="">
+                    <i class="fa-solid fa-bolt"></i>
+                    Execute Autonomous Trace
+                </button>
+            </div>
+        </section>
+        <!-- ================= WALLET INTELLIGENCE ================= -->
+        <section class="page" id="wallets">
+            <div class="page-heading">
+                <div>
+                    <span class="eyebrow">COUNTERPARTY INTELLIGENCE</span>
+                    <h1>Wallet Intelligence Scanner</h1>
+                    <p>Perform a quick single-address audit to screen for known entities, mixers, and immediate counterparties.</p>
+                </div>
+            </div>
+
+            <div class="wallet-search card">
+                <i class="fa-solid fa-wallet"></i>
+                <input id="intelSearchInput" placeholder="Enter any wallet address to scan counterparties and risk...">
+                <button class="primary-button" data-bind-17="">
+                    <i class="fa-solid fa-magnifying-glass"></i> Inspect Wallet
+                </button>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon blue"><i class="fa-solid fa-building-columns"></i></div>
+                    <div>
+                        <span>Exchange Attribution</span>
+                        <h2 id="intelVaspLead">None</h2>
+                        <small class="positive">VASP Ledger Status</small>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon purple"><i class="fa-solid fa-robot"></i></div>
+                    <div>
+                        <span>AML Risk Flags</span>
+                        <h2 id="intelAnomalies">0</h2>
+                        <small class="negative">Heuristics Triggered</small>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon green"><i class="fa-solid fa-arrows-split-up-and-left"></i></div>
+                    <div>
+                        <span>Direct Counterparties</span>
+                        <h2 id="intelTxCount">0</h2>
+                        <small class="positive">1st-Hop Connections</small>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon red"><i class="fa-solid fa-shield-virus"></i></div>
+                    <div>
+                        <span>Assigned Threat Score</span>
+                        <h2 class="danger-text" id="intelRiskScore">--/100</h2>
+                        <small class="negative">Calculated Severity</small>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= TRANSACTION EXPLORER ================= -->
+        <section class="page" id="transactions">
+            <div class="page-heading">
+                <div>
+                    <span class="eyebrow">TRANSACTION LEDGER</span>
+                    <h1>Forensic Transaction Explorer</h1>
+                    <p>Granular transaction ledger highlighting capital movements, rapid turnarounds, and peeling events.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <p id="txContext">Load a saved case and trace below, or run an investigation. A downloaded PDF does not automatically load its source data.</p>
+                <div class="filters"><select id="txCasePicker" aria-label="Saved case"></select><select id="txTracePicker" aria-label="Saved trace"><option value="">Select a saved trace</option></select><button id="refreshTxCases" class="small-button">Refresh cases</button></div>
+                <p class="helper-text">Case selector uses the current case page; use Reports and its Older cases button to reach earlier cases.</p>
+                <div class="filters">
+                    <input id="txSearchFilter" placeholder="Filter by address or transaction hash...">
+                    <select id="txRiskFilterSelect" data-bind-18="">
+                        <option value="all">All Movements</option>
+                        <option value="rapid">Rapid Turnarounds (<24h) Only</option>
+                        <option value="standard">Standard Transfers Only</option>
+                    </select>
+                </div>
+
+                <div class="table-container">
+                    <table id="txTable">
+                        <thead>
+                            <tr>
+                                <th>TRANSACTION HASH</th>
+                                <th>SENDER (FROM)</th>
+                                <th>RECIPIENT (TO)</th>
+                                <th>AMOUNT / ASSET</th>
+                                <th>BLOCK TIMESTAMP</th>
+                                <th>FORENSIC FLAG</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Transactions populated dynamically from active trace -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= ALERTS ================= -->
+        <section class="page" id="alerts">
+            <div class="page-heading">
+                <div>
+                    <span class="eyebrow">THREAT MONITOR</span>
+                    <h1>Autonomous AML Alerts</h1>
+                    <p>Wallets requiring immediate legal review due to pass-through laundering, mixing, or high layering scores.</p>
+                </div>
+            </div>
+
+            <div class="alerts-grid" id="alertsContainer">
+                <!-- High-risk alerts injected here -->
+            </div>
+        </section>
+
+        <!-- ================= ANALYTICS ================= -->
+        <section class="page" id="analytics">
+            <div class="page-heading">
+                <div>
+                    <span class="eyebrow">THREAT INTELLIGENCE</span>
+                    <h1>Typology & Network Analytics</h1>
+                    <p>Comprehensive overview of crime distributions and multi-hop network complexity.</p>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon blue"><i class="fa-solid fa-folder-tree"></i></div>
+                    <div>
+                        <span>Cases Profiled</span>
+                        <h2 id="analyticsTotalCases">0</h2>
+                        <small class="positive">Case Management</small>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon red"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                    <div>
+                        <span>High-score cases</span>
+                        <h2 id="analyticsCriticalCases">0</h2>
+                        <small class="negative">Requires analyst review</small>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon green"><i class="fa-solid fa-route"></i></div>
+                    <div>
+                        <span>Observed graph nodes</span>
+                        <h2 id="analyticsHopsTracked">0</h2>
+                        <small class="positive">Across latest case traces</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card analytics-chart">
+                <div class="card-header">
+                    <div>
+                        <h3>Reported Fraud Typology Breakdown</h3>
+                        <p>Distribution of registered crime categories across active investigations</p>
+                    </div>
+                </div>
+                <div class="horizontal-bars" id="typologyContainer">
+                    <!-- Clean, formatted progress bars injected here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= REPORTS ================= -->
+        <section class="page" id="reports">
+            <div class="page-heading">
+                <div>
+                    <span class="eyebrow">EVIDENCE WORKSPACE</span>
+                    <h1>Investigation Reports</h1>
+                    <p>Review saved trace snapshots and export investigation drafts with retrieval diagnostics.</p>
+                </div>
+
+                <button class="primary-button" data-bind-19="">
+                    <i class="fa-solid fa-file-pdf"></i>
+                    Export Active Dossier
+                </button>
+            </div>
+
+            <div class="card">
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>CASE ID</th>
+                                <th>TARGET WALLET</th>
+                                <th>BLOCKCHAIN</th>
+                                <th>THREAT SCORE</th>
+                                <th>DOSSIER GENERATION</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportsTableBody">
+                            <!-- Database report entries loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= SETTINGS ================= -->
+        <section class="page" id="settings">
+            <div class="page-heading">
+                <div>
+                    <span class="eyebrow">SYSTEM MANAGEMENT</span>
+                    <h1>Investigator Profile & Diagnostics</h1>
+                    <p>Review your authenticated identity and provider configuration.</p>
+                </div>
+            </div>
+
+            <div class="settings-grid">
+                <div class="card">
+                    <h3>Authenticated investigator</h3>
+                    <div class="setting-row">
+                        <span>Investigating Officer</span>
+                        <input id="settingName" value="Investigator">
+                    </div>
+                    <div class="setting-row">
+                        <span>Officer Badge / ID</span>
+                        <input id="settingBadge" value="Managed by administrator" readonly>
+                    </div>
+                    <div class="setting-row">
+                        <span>Law Enforcement Agency</span>
+                        <input id="settingUnit" value="Deployment agency" readonly>
+                    </div>
+                    <button class="primary-button" data-bind-20="">
+                        <i class="fa-solid fa-floppy-disk"></i> Account information
+                    </button>
+                </div>
+
+                <div class="card">
+                    <h3>Subsystem Diagnostics</h3><p>Use this when a graph is empty or a provider fails. Configuration is separate from a successful live request.</p><pre id="providerDiagnostics"></pre>
+                    <div class="setting-row">
+                        <span>FastAPI Engine (Port 8000)</span>
+                        <span class="connected" id="diagBackend">Not checked</span>
+                    </div>
+                    <div class="setting-row">
+                        <span>PostgreSQL Entity Database</span>
+                        <span class="connected" id="diagDb">Not checked</span>
+                    </div>
+                    <div class="setting-row">
+                        <span>Alchemy & Explorer Adapters</span>
+                        <span class="connected" id="diagAlchemy">Not checked</span>
+                    </div>
+                    <button class="primary-button" data-bind-21="">
+                        <i class="fa-solid fa-arrows-rotate"></i> Check configuration
+                    </button>
+                </div>
+            </div>
+            <div class="card entity-registry"><h3>Wallet & entity registry</h3><p>Chain-specific sourced labels identify VASP and mixer leads. A VASP connection does not prove fiat withdrawal. Labels apply to newly retrieved snapshots.</p>
+            <div class="filters"><input id="entitySearch" placeholder="Find address, entity or chain" aria-label="Search entities"><button id="entityRefresh" class="small-button">Search / refresh</button></div>
+            <div class="table-container"><table><thead><tr><th>Network</th><th>Address</th><th>Name</th><th>Classification</th><th>Source</th><th>Action</th></tr></thead><tbody id="entityRows"></tbody></table></div>
+            <p id="entityMessage" role="status"></p>
+            <h3>Online attribution cache</h3><p>Public-source labels are unreviewed leads. Source dates can be historical. Refresh checks approved public lists without sending investigated addresses to a search engine.</p>
+            <div class="filters"><button id="onlineStatusButton" class="small-button">Check online sources</button><button id="onlineRefreshButton" class="small-button" hidden>Refresh sources (admin)</button></div>
+            <pre id="onlineSourceStatus" style="white-space:pre-wrap;padding:20px"></pre>
+            <div class="table-container"><table><thead><tr><th>Network / address</th><th>External label</th><th>Source / date</th><th>Status</th><th>Review</th></tr></thead><tbody id="onlineEntityRows"></tbody></table></div>
+            <form id="entityForm" hidden><h3>Add or update attribution (administrator)</h3><div class="form-grid">
+            <label>Network<select name="blockchain"><option>Ethereum</option><option>Polygon</option><option>BNB Chain</option><option>Tron</option><option>Bitcoin</option></select></label>
+            <label>Full address<input name="wallet_address" required maxlength="100"></label><label>Entity name<input name="name" required maxlength="120"></label><label>Source URL / reference and date<input name="source" required minlength="5" maxlength="500"></label></div>
+            <label><input type="checkbox" name="is_vasp"> VASP / exchange</label> <label><input type="checkbox" name="is_mixer"> Mixer</label> <label><input type="checkbox" name="is_sanctioned"> Sanctions match</label>
+            <button type="submit" class="primary-button">Save attribution</button></form></div>
+        </section>
+
+        <div class="case-pagination"><button id="previousCases" class="small-button">Newer cases</button><span id="casePageLabel">Latest 100 cases</span><button id="nextCases" class="small-button">Older cases</button></div>
+<!-- ================= TRACE RESULT MODAL ================= -->
+        <div class="modal" id="traceModal">
+            <div class="modal-content">
+                <header class="graph-window-header"><div><span class="eyebrow">TRACE EXPLORER</span><h2>Investigation workspace</h2></div><div class="window-controls">
+                    <button id="minimizeGraph" class="window-control" title="Minimise workspace (keep tabs open)" aria-label="Minimise workspace"><i class="fa-solid fa-minus" aria-hidden="true"></i></button>
+                    <button id="fullscreenGraph" class="window-control" title="Full screen" aria-label="Full screen"><i class="fa-regular fa-square" aria-hidden="true"></i></button>
+                    <button id="closeGraphTab" class="window-control close-control" title="Close current graph tab (saved trace remains)" aria-label="Close current graph tab"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+                </div></header>
+                <p>Hover to inspect and copy. Click to pin the card; drag the background to pan.</p>
+                <div id="graphTabs" class="graph-tabs" role="tablist" aria-label="Investigation graphs"></div>
+                <div class="graph-toolbar"><label for="graphLayout">Layout</label><select id="graphLayout"><option value="auto">Auto (recommended)</option value="repulsion">Repulsive / airy</option><option value="hops">Spaced hops</option></select><button id="fitGraph" title="Bring the entire graph into view"><i class="fa-solid fa-expand" aria-hidden="true"></i> Fit graph</button><button id="zoomOut" title="Zoom out" aria-label="Zoom out"><i class="fa-solid fa-minus" aria-hidden="true"></i></button><button id="zoomIn" title="Zoom in" aria-label="Zoom in"><i class="fa-solid fa-plus" aria-hidden="true"></i></button><span id="zoomLevel" role="status"></span><button id="newGraph"><i class="fa-solid fa-plus" aria-hidden="true"></i> New investigation</button></div>
+<div id="coverageBanner" class="coverage-banner" role="status"></div>
+<details><summary>Retrieval diagnostics</summary><pre id="coverageDetails"></pre></details>
+<div class="trace-result">
+                    <!-- Populated dynamically -->
+                </div>
+
+                <!-- Vis.js Graph Canvas -->
+                <div class="graph-meta"><span id="layoutStatus" role="status"></span><select id="nodePicker" aria-label="Inspect a node using keyboard or touch"></select></div>
+                <div id="networkGraph" tabindex="0" aria-label="Investigation graph. Use zoom and fit controls; the node selector provides keyboard inspection.">
+                    <aside id="nodeInspector" class="node-inspector hover-card" hidden aria-label="Node inspection"><button id="closeNode" title="Dismiss node inspection" aria-label="Dismiss node inspection"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button><span id="hoverState"></span><strong id="nodeShortAddress"></strong><span id="nodeLabel"></span><input id="selectedAddress" readonly aria-label="Full node address"><p id="nodeReasons"></p><div class="hover-actions"><button id="copyAddress" disabled><i class="fa-regular fa-copy" aria-hidden="true"></i> Copy address</button><button id="investigateAddress" disabled>Investigate</button><button id="focusNode">Focus connections</button></div><span id="copyFeedback" role="status"></span></aside>
+                </div>
+                <div class="graph-footer"><div class="graph-legend"><span><b class="legend-origin"></b>Reported</span><span><b class="legend-low"></b>0–19</span><span><b class="legend-medium"></b>20–49</span><span><b class="legend-high"></b>50–79</span><span><b class="legend-critical"></b>80–100</span><span><b class="legend-vasp"></b>VASP</span><span><b class="legend-mixer"></b>Mixer</span><span><b class="legend-unknown"></b>Unknown</span><span>◇ UTXO transaction</span></div><div><span id="focusStatus"></span><button id="resetFocus" hidden>Show all nodes</button></div></div>
+<div class="flow-preview">
+                    <div class="flow-node">
+                        <i class="fa-solid fa-wallet"></i>
+                        <span>Suspect (Origin)</span>
+                    </div>
+                    <i class="fa-solid fa-arrow-right"></i>
+                    <div class="flow-node">
+                        <i class="fa-solid fa-share-nodes"></i>
+                        <span>Intermediary Nodes</span>
+                    </div>
+                    <i class="fa-solid fa-arrow-right"></i>
+                    <div class="flow-node">
+                        <i class="fa-solid fa-building-columns"></i>
+                        <span>Identified VASP / Mixer</span>
+                    </div>
+                </div>
+
+                <button class="primary-button full" data-bind-23="">
+                    <i class="fa-solid fa-file-pdf"></i>
+                    Download Investigation Dossier
+                </button>
+            </div>
+        </div>
+
+    <dialog id="helpDialog" aria-labelledby="helpTitle"><div class="help-heading"><h2 id="helpTitle">Using CryptoTrace</h2><button id="closeHelp" aria-label="Close help" title="Close help"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div>
+    <details open><summary>Start an investigation</summary><p>Enter a wallet, choose the correct network, and start with one hop. A hop is one step through the observed transaction relationships. Saved investigations reopen the original retrieved snapshot.</p></details>
+    <details><summary>Read the graph</summary><p>Nodes are wallets; Bitcoin also has diamond-shaped transaction nodes. Arrows show observed transfer direction, not proven movement of the same stolen funds. Purple identifies the reported wallet, regardless of its score.</p><p>Hover for the address, score, reasons and copy button. Click to pin the card, or use the node selector with a keyboard. Focus connections temporarily hides unrelated records; Show all nodes restores them. Reports always include the entire retrieved snapshot.</p><p>Auto uses repulsion up to 150 nodes and spaced hops above that. Fit graph resets the view; zoom and panning are bounded. Crossing edges can still occur in a dense graph.</p></details>
+    <details><summary>Understand scores and missing transactions</summary><p>Risk scores support investigator review and do not establish criminal conduct. Every trace records provider coverage, retrieval time and truncation. A disconnected origin is not a clean-wallet finding.</p><p>Partial means a limit or retrieval problem occurred. Unavailable means the origin requests failed. No transfers found means no qualifying records were retrieved, not that there has never been activity. Observed means supported provider windows were exhausted within the configured scope.</p></details>
+    <details><summary>Reports and NCRP</summary><p>The dossier is an investigator-review draft, not an NCRP approval or an electronic-evidence certificate. Preserve source records and consult the receiving agency about its report template, review and certification process. The snapshot digest does not digitally sign the PDF.</p></details>
+    </dialog>
+    <section id="auditPanel" class="audit-panel" hidden><h2>Access and action history</h2><p>Times shown in your browser's timezone. IP is observed by the server; device details are self-reported. Physical location is not collected.</p><button id="closeAudit">Close</button><button id="nextAudit">Older entries</button><div class="table-container"><table><thead><tr><th>Time</th><th>User</th><th>Action</th><th>IP</th><th>Browser/device</th></tr></thead><tbody id="auditRows"></tbody></table></div></section>
+</main>
+</div>
+
+<!-- PDF Libraries -->
+<script src="/assets/jspdf.umd.min.js"></script>
+<script src="/assets/jspdf.plugin.autotable.min.js"></script>
+
+<script src="script.js"></script>
+<script src="graph-ui.js"></script>
+<script src="reports.js"></script>
+<script src="events.js"></script>
+</body>
+</html>
